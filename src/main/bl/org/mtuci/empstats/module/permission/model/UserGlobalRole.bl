@@ -1,0 +1,50 @@
+import org.mtuci.empstats.core.ProjTable;
+import org.mtuci.empstats.module.core.model.Пользователь;
+import org.zenframework.z8.base.sql.Transaction;
+import org.zenframework.z8.base.table.value.Field;
+import org.zenframework.z8.base.table.value.Link;
+
+[generatable]
+[name "Users global roles"]
+public class UserGlobalRole extends ProjTable {
+
+	public Пользователь user;
+	public GlobalRole role;
+
+	[name "User"]
+	public Link userId = user;
+
+	[name "Global role"]
+	public Link roleId = role;
+
+	virtual protected void afterCreate(guid recordId) {
+		super.afterCreate(recordId);
+		Transaction.flush();
+		Пользователь.onGlobalRoleChanged(userId.get());
+	}
+
+	virtual protected void beforeDestroy(guid recordId) {
+		super.beforeDestroy(recordId);
+		UserGlobalRole me;
+		me.readRecord(recordId, Field[] { me.userId });
+		userId = me.userId.get();
+	}
+
+	virtual protected void afterDestroy(guid recordId) {
+		super.afterDestroy(recordId);
+		Transaction.flush();
+		Пользователь.onGlobalRoleChanged(userId.get());
+	}
+
+
+	public guid create(guid userId, guid roleId) {
+		guid[] ids = findRecords(this.userId == userId && this.roleId == roleId);
+		if (!ids.isEmpty())
+			return ids[0];
+		this.userId = userId;
+		this.roleId = roleId;
+		guid id = create();
+		Transaction.flush();
+		return id;
+	}
+}

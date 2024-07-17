@@ -1,0 +1,26 @@
+import org.zenframework.z8.base.table.Table;
+import org.zenframework.z8.base.table.value.Aggregation;
+import org.zenframework.z8.base.table.value.Field;
+import org.zenframework.z8.base.table.value.GuidField;
+
+public class ProjTable extends Table {
+
+	public guid[] aggrIds(GuidField guidField, sql_bool where) {
+		return aggrIds(guidField, where, false);
+	}
+
+	public guid[] aggrIds(GuidField guidField, sql_bool where, bool distinct) {
+		guidField.aggregation = distinct ? Aggregation.Distinct : Aggregation.Array;
+		aggregate(Field[] { guidField }, where);
+		return guidField.array();
+	}
+
+	public void getRecord(guid id, Field[] fields) {
+		getRecord(id, fields, "Запись '$id' не найдена");
+	}
+
+	public void getRecord(guid id, Field[] fields, string notFoundMsg) {
+		if (!readRecord(id, fields))
+			throw notFoundMsg.replaceAll("\\$id", id);
+	}
+}

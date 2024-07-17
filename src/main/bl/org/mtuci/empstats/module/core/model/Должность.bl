@@ -1,0 +1,36 @@
+import org.mtuci.empstats.core.NameField;
+import org.mtuci.empstats.core.ProjTable;
+import org.mtuci.empstats.core.ShortNameField;
+
+[generatable]
+[name "Должности"]
+[displayName "Должности"]
+public class Должность extends ProjTable {
+
+	[displayName "Должность"]
+	ShortNameField shortName;
+	shortName.length = 128;
+
+	[displayName "Должность"]
+	NameField name;
+	name.length = 128;
+
+	records {
+
+		[name "Аналитик"]
+		Аналитик = '29A573A0-5A89-46D4-9D4A-E5AD676FB65F';
+
+		[name "Архивариус"]
+		Архивариус = '78618624-DC0E-4288-92CE-78BA21EDF39C';
+
+		[name "Заведующий отделом"]
+		[shortName "Заведующий отделом, Зав.отделом"]
+		ЗаведующийОтделом = '7D3111E7-53A6-4056-88B2-2B8F99ECC3D4';
+
+		[name "Консультант"]
+		Консультант = 'AB09F8DF-5280-4F47-8DD1-DC2AB28ACB18';
+
+		[name "Специалист"]
+		Специалист = '25DA07C2-3552-49B3-950E-B5672E5CEA9C';
+	}
+}

@@ -1,0 +1,7 @@
+import org.zenframework.z8.base.table.value.StringField;
+
+[name "Short name"]
+public class ShortNameField extends StringField {
+
+	length = 15;
+}

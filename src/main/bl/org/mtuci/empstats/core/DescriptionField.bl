@@ -1,0 +1,6 @@
+import org.zenframework.z8.base.table.value.TextField;
+
+[name "Description"]
+public class DescriptionField extends TextField {
+	
+}

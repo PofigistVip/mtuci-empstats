@@ -1,0 +1,59 @@
+import org.mtuci.empstats.core.DescriptionField;
+import org.mtuci.empstats.core.ProjTable;
+import org.zenframework.z8.base.table.value.DateField;
+import org.zenframework.z8.base.table.value.Link;
+import org.zenframework.z8.base.table.value.StringExpression;
+import org.zenframework.z8.base.table.value.StringField;
+
+[generatable]
+[name "Сотрудники"]
+public class Сотрудник extends ProjTable {
+	[displayName "Комментарий"] DescriptionField description;
+
+	public Пользователь пользователь;
+
+	[name "Пользователь"] public Link пользовательId = пользователь;
+
+
+	[name "Фамилия"]
+	[displayName "Фамилия"]
+	public StringField фамилия;
+	фамилия.length = 64;
+
+	[name "Имя"]
+	[displayName "Имя"]
+	public StringField имя;
+	имя.length = 64;
+
+	[name "Отчество"]
+	[displayName "Отчество"]
+	public StringField отчество;
+	отчество.length = 64;
+
+	[name "Дата рождения"]
+	[displayName "Дата рождения"]
+	public DateField датаРождения;
+
+
+	[displayName "Ф И.О."]
+	public StringExpression фио = class {
+		virtual protected sql_string expression() {
+			sql_string фамилия = container.фамилия;
+			sql_string имя = container.имя;
+			sql_string отчество = container.отчество;
+			return фамилия + 
+				имя.isEmpty().IIF("", " " + имя.substring(0, 1) + ".") +
+				отчество.isEmpty().IIF("", отчество.substring(0, 1) + ".");
+		}
+	};
+
+	[displayName "ФИО"]
+	public StringExpression полноеИмя = class {
+		virtual protected sql_string expression() {
+			sql_string фамилия = container.фамилия;
+			sql_string имя = container.имя;
+			sql_string отчество = container.отчество;
+			return фамилия + " " + имя + " " + отчество;
+		}
+	};
+}

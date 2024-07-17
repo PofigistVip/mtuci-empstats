@@ -1,0 +1,149 @@
+.строка-табеля .control {
+	height: auto;
+	display: flex;
+	border-width: 1px !important;
+	padding-left: 0;
+	padding-right: 0;
+}
+
+.строка-табеля .control .headers {
+	flex: 1;
+}
+
+.строка-табеля .control .день {
+	text-align: center;
+	flex: 1;
+}
+
+.строка-табеля .control .день.сумма {
+	font-weight: bold;
+	background-color: #eee;
+}
+
+.строка-табеля .control .день.сумма>.число>span {
+	font-size: 0.7em;
+	position: absolute;
+	top: 1.4em;
+}
+
+.строка-табеля .control .день.weekend {
+	color: #d43f3a;
+}
+
+.строка-табеля .control .день.disabled>.число/*,*/
+/*.строка-табеля .control .день.disabled>.часы*/ {
+	color: #eee;
+}
+
+.строка-табеля .control .день>.число,
+.строка-табеля .control .headers>.число {
+	border-bottom: 1px solid #dfdfdf;
+	padding-top: .57142857em;
+	padding-bottom: .57142857em;
+	font-size: .9em;
+}
+
+.строка-табеля .control .день>.часы,
+.строка-табеля .control .headers>.часы {
+	padding-top: .71428571em;
+	padding-bottom: .71428571em;
+}
+
+.строка-табеля .control .день>.часы.план,
+.строка-табеля .control .headers>.часы.план {
+	border-top: 2px solid transparent;
+	border-bottom: 1px solid #dfdfdf;
+	font-size: .9em;
+}
+
+.строка-табеля .control .день>.часы.план.change {
+	border-top-color: red;
+}
+
+.строка-табеля .control .день>.часы.факт,
+.строка-табеля .control .headers>.часы.факт {
+	font-weight: 500;
+	border: 2px solid transparent;
+}
+
+.строка-табеля .control .headers>.число,
+.строка-табеля .control .headers>.часы.план,
+.строка-табеля .control .headers>.часы.факт {
+	min-width: 5em;
+	padding-left: .57142857em;
+	border-right: 1px solid #dfdfdf;
+	border-left: 0;
+	font-weight: 500;
+}
+
+.строка-табеля:not(.readonly) .control .день:not(.disabled)>.часы.active {
+	border-color: #afafaf;
+}
+
+.строка-табеля.focus:not(.readonly) .control .день/*:not(.disabled)*/>.часы.active {
+	border-color: #39c;
+}
+
+.табель .list.control .items .column {
+	height: 8.6em;
+}
+
+.табель .list.control .items .column>.cell>.text>.фио {
+	font-weight: 500;
+}
+
+.табель .list.control .items .column>.cell>.text>.должность {
+	white-space: normal;
+	padding-top: .5em;
+}
+
+.табель .list.control .item>.column.дни>.cell>.text {
+	flex: 1;
+}
+
+.табель .list.control.focus .item>.column.дни>.cell {
+	color: #222;
+	background-color: #fff;
+}
+
+.табель .list.control .item>.column>.строка-табеля {
+	padding: .5em .5em;
+}
+
+.табель .list.control .item>.column>.строка-табеля .control {
+	padding: 0;
+}
+
+.navigator.кадры.табели>.body>.list:first-child,
+.navigator.кадры.табели>.body>.list-box:first-child {
+	width: 20%;
+}
+
+.navigator.кадры.табели>.body>.navigator-listbox .items td[field="1"]>.cell>.text {
+	text-align: center;
+}
+
+.window.отклонить-табель {
+	left: 40%;
+	top: 20%;
+	width: 40%;
+	height: 40%;
+}
+
+.window.отклонить-табель textarea {
+	resize: none;
+}
+
+.window.подписать-табель {
+	left: 20%;
+	top: 20%;
+	width: 60%;
+	height: 60%;
+}
+
+.window.экспорт-табелей {
+	left: auto;
+	top: auto;
+	height: auto;
+	width: auto;
+}

@@ -1,0 +1,78 @@
+import org.mtuci.empstats.core.Module;
+import org.mtuci.empstats.module.core.model.Должность;
+import org.mtuci.empstats.module.core.model.История;
+import org.mtuci.empstats.module.core.model.Подразделение;
+import org.mtuci.empstats.module.core.model.Сотрудник;
+import org.mtuci.empstats.module.core.model.Статус;
+import org.mtuci.empstats.module.core.model.ШтатноеРасписание;
+import org.mtuci.empstats.module.emps.model.Больничный;
+import org.mtuci.empstats.module.emps.model.ГрафикОтпусков;
+import org.mtuci.empstats.module.emps.model.Табель;
+import org.mtuci.empstats.module.emps.model.ТабельСотрудника;
+import org.mtuci.empstats.module.emps.model.ШтатПропускРаботы;
+import org.mtuci.empstats.module.emps.view.Подразделения;
+import org.mtuci.empstats.module.emps.view.Сотрудники;
+import org.mtuci.empstats.module.emps.view.Табели;
+import org.mtuci.empstats.module.permission.data.RoleData;
+import org.zenframework.z8.base.table.Table;
+import org.zenframework.z8.lang.Object;
+
+public class КадрыModule extends Module {
+	virtual public string moduleName() {
+		return "Кадры";
+	}
+
+	public static guid PERM_ПОДРАЗДЕЛЕНИЯ_READ = '8F9D35E8-A6D0-4FBE-AA70-BE1D6C263A74';
+	public static guid PERM_ПОДРАЗДЕЛЕНИЯ_EDIT = 'C0464AE4-111E-4E80-8131-F8AB0E139A06';
+
+	public static guid PERM_СОТРУДНИКИ_READ = '2429DA20-6DA3-4BE6-B044-8653420B03B8';
+	public static guid PERM_СОТРУДНИКИ_EDIT = '2F070B03-3796-4FF3-9E56-CB2025AA1CCA';
+
+	public static guid PERM_ТАБЕЛИ_ПОДАЧА = '0DD421E3-BCBC-4E94-80CC-BF3703316C1D';
+	public static guid PERM_ТАБЕЛИ_КАДРЫ = 'E2052AC6-9604-4FB8-944B-932067402458';
+	public static guid PERM_ТАБЕЛИ_БУХГАЛТЕРИЯ = 'EA6666C7-03E0-4737-8596-7CB17BE7BB5F';
+
+	Должность Должность;
+	История История;
+	Подразделение Подразделение;
+	Сотрудник Сотрудник;
+	Статус Статус;
+	ШтатноеРасписание ШтатноеРасписание;
+	Больничный Больничный;
+	ГрафикОтпусков ГрафикОтпусков;
+	Табель Табель;
+	ТабельСотрудника ТабельСотрудника;
+	ШтатПропускРаботы ШтатПропускРаботы;
+
+	Подразделения Подразделения;
+	Сотрудники Сотрудники;
+	Табели Табели;
+
+	private КадрыDesktop КадрыDesktop;
+
+	int[Object] доступEntry = { (КадрыDesktop, 1) };
+
+	string[Table][guid] tables = {
+		(PERM_ПОДРАЗДЕЛЕНИЯ_READ, rTables(Table[] { Должность, Подразделение, Сотрудник, ШтатноеРасписание, })),
+		(PERM_ПОДРАЗДЕЛЕНИЯ_EDIT, rwnd_rTables(Table[] { Подразделение, }, Table[] { Должность, Сотрудник, ШтатноеРасписание, })),
+
+		(PERM_СОТРУДНИКИ_READ, rTables(Table[] { Должность, Подразделение, Сотрудник, ШтатноеРасписание, })),
+		(PERM_СОТРУДНИКИ_EDIT, rwnd_rTables(Table[] { Сотрудник, }, Table[] { Должность, Подразделение, Сотрудник, ШтатноеРасписание, })),
+
+		(PERM_ТАБЕЛИ_ПОДАЧА, rwnd_rTables(Table[] { Табель, ТабельСотрудника, }, Table[] { Должность, Подразделение, Сотрудник, })),
+		(PERM_ТАБЕЛИ_КАДРЫ, rwnd_rTables(Table[] {  }, Table[] { Табель, ТабельСотрудника, Должность, Подразделение, Сотрудник, })),
+		(PERM_ТАБЕЛИ_БУХГАЛТЕРИЯ, rwnd_rTables(Table[] {  }, Table[] { Табель, ТабельСотрудника, Должность, Подразделение, Сотрудник, })),
+	};
+
+	roles = {
+		RoleData.init2(PERM_ПОДРАЗДЕЛЕНИЯ_READ, "Кадры: Подразделения (просмотр)", "Просмотр страницы 'Подразделения'", tables, Table[] { Подразделения }, доступEntry),
+		RoleData.init2(PERM_ПОДРАЗДЕЛЕНИЯ_EDIT, "Кадры: Подразделения (редактирование)", "Редактирование записей на странице 'Подразделения'", tables, Table[] { Подразделения }, доступEntry),
+
+		RoleData.init2(PERM_СОТРУДНИКИ_READ, "Кадры: Сотрудники (просмотр)", "Просмотр страницы 'Сотрудники'", tables, Table[] { Сотрудники }, доступEntry),
+		RoleData.init2(PERM_СОТРУДНИКИ_EDIT, "Кадры: Сотрудники (редактирование)", "Редактирование записей на странице 'Сотрудники'", tables, Table[] { Сотрудники }, доступEntry),
+
+		RoleData.init2(PERM_ТАБЕЛИ_ПОДАЧА, "Кадры: Табели (подача)", "Подача табелей от подразделений", tables, Table[] { Табели }, доступEntry),
+		RoleData.init2(PERM_ТАБЕЛИ_КАДРЫ, "Кадры: Табели (отдел кадров)", "Проверка табелей от имени отдела кадров", tables, Table[] { Табели }, доступEntry),
+		RoleData.init2(PERM_ТАБЕЛИ_БУХГАЛТЕРИЯ, "Кадры: Табели (бухгалтерия)", "Проверка табелей от имени бухгалтерии", tables, Table[] { Табели }, доступEntry),
+	};
+}

@@ -1,0 +1,15 @@
+import org.mtuci.empstats.core.NameField;
+import org.mtuci.empstats.core.ProjTable;
+
+[generatable]
+[name "Сущности истории"]
+[displayName "Сущности истории"]
+public class СущностьИстории extends ProjTable {
+
+	[displayName "Сущность истории"] NameField name;
+
+	records {
+		[name "Табель"]
+		Табель = 'D7BB0C5F-BA17-4FC8-B285-B4349C21E64E';
+	}
+}

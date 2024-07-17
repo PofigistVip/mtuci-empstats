@@ -1,0 +1,33 @@
+import org.mtuci.empstats.module.permission.viewModel.UsersVModel;
+import org.zenframework.z8.base.form.Listbox;
+
+[request true]
+[displayName "Пользователи"]
+public class UsersView extends UsersVModel {
+
+	recordId.valueFor = recordId;
+
+	actions = {
+		восстановитьДоступы,
+	};
+
+	names = { loginAndBanned, };
+	columns = { loginAndBanned, };
+	sortFields = { name };
+
+	colCount = 3;
+	controls = {
+		name, banned,
+		rolesList,
+	};
+
+	name.colSpan = 2;
+
+	[displayName "Роли"]
+	Listbox rolesList;
+	rolesList.query = role;
+	rolesList.link = role.userId;
+	rolesList.columns = { role.role.name, role.role.description };
+	rolesList.colSpan = 3;
+	rolesList.flex = 1;
+}

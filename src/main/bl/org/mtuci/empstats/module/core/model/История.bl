@@ -1,0 +1,64 @@
+import org.zenframework.z8.base.sql.Transaction;
+import org.zenframework.z8.base.table.SortDirection;
+import org.zenframework.z8.base.table.Table;
+import org.zenframework.z8.base.table.value.GuidField;
+import org.zenframework.z8.base.table.value.Link;
+import org.zenframework.z8.base.table.value.StringField;
+
+[generatable]
+[name "История"]
+[displayName "История"]
+public class История extends Table {
+
+	[displayName "Дата"] createdAt;
+	createdAt.sortDirection = SortDirection.Desc;
+
+
+	public СущностьИстории типСущности;
+
+	public Сотрудник автор;
+	[displayName "Автор"] автор.фио;
+
+
+	[name "Тип сущности"] public Link типСущностиId = типСущности;
+	[name "Контрагент"] public Link авторId = автор;
+
+
+	[name "Сущность"]
+	public GuidField сущностьId;
+	сущностьId.indexed = true;
+
+	[name "Действие"]
+	public StringField действие;
+	действие.length = 128;
+
+	[name "Сообщение"]
+	public StringField сообщение;
+	сообщение.length = 512;
+
+
+	virtual protected void beforeUpdate(guid recordId) {
+		throw "Изменение записи истории недопустимо";
+	}
+
+
+	public guid создать(guid типСущности, guid сущность, string действие) {
+		return создать(типСущности, сущность, действие, "");
+	}
+
+	public guid создать(guid типСущности, guid сущность, string действие, string сообщение) {
+		this.типСущностиId = типСущности;
+		this.сущностьId = сущность;
+		this.авторId = Пользователь.сотрудникId();
+		this.действие = действие;
+		this.сообщение = сообщение;
+		guid id = create();
+		Transaction.flush();
+		return id;
+	}
+
+	public void удалить(guid типСущности, guid сущность) {
+		destroy(типСущностиId == типСущности && сущностьId == сущность);
+		Transaction.flush();
+	}
+}

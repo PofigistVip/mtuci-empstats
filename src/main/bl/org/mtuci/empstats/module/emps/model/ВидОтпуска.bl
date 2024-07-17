@@ -1,0 +1,24 @@
+import org.mtuci.empstats.core.NameField;
+import org.mtuci.empstats.core.ProjTable;
+import org.mtuci.empstats.core.ShortNameField;
+
+[generatable]
+[name "Виды отпуска"]
+[displayName "Виды отпуска"]
+public class ВидОтпуска extends ProjTable {
+
+	[displayName "Вид отпуска"]
+	NameField name;
+	name.length = 256;
+
+	ShortNameField shortName;
+	shortName.length = 20;
+
+	records {
+		[name "Плановый"]
+		Плановый = '5CE2DFC3-DBD6-497F-8029-895941AA9A62';
+
+		[name "Внеочередной"]
+		Внеочередной = '45DD55F0-0921-4922-A0C4-7AD5A1814CD2';
+	}
+}

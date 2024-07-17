@@ -1,0 +1,25 @@
+import org.mtuci.empstats.core.ProjTable;
+import org.mtuci.empstats.module.core.model.Сотрудник;
+import org.zenframework.z8.base.table.value.DateField;
+import org.zenframework.z8.base.table.value.Link;
+
+[generatable]
+[name "Штат Пропуск работы"]
+public class ШтатПропускРаботы extends ProjTable {
+
+	public Сотрудник сотрудник;
+
+
+	[name "Сотрудник"] public Link сотрудникId = сотрудник;
+
+
+	[name "Дата"]
+	[displayName "Дата"]
+	public DateField дата;
+	дата.indexed = true;
+
+	[name "Срок"]
+	[displayName "Срок"]
+	public DateField срок;
+	срок.indexed = true;
+}

@@ -1,0 +1,27 @@
+import org.mtuci.empstats.core.NameField;
+import org.zenframework.z8.base.table.Table;
+
+[generatable]
+[name "Статусы"]
+[displayName "Статусы"]
+public class Статус extends Table {
+	[displayName "Статус"] NameField name;
+	name.length = 256;
+
+	records {
+		[name "Черновик"]
+		Черновик = 'D6BA36DB-8C64-46FF-84AB-4F8006B8C32E';
+
+		[name "Проверка К"]
+		ПроверкаК = '622EB2B7-BC4D-4758-B9AC-C07C3338792D';
+
+		[name "Проверка Б"]
+		ПроверкаБ = '7BA3A43F-F995-4E71-A878-DA2FAD71A7A7';
+
+		[name "Принят"]
+		Принят = '1FB10409-71DC-4D23-AAB3-683134C860D5';
+
+		[name "Отклонен"]
+		Отклонен = 'A11D1EA0-A8DE-4ADA-AF6A-ED48BFF37804';
+	}
+}

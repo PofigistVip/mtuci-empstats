@@ -1,0 +1,14 @@
+import org.mtuci.empstats.module.permission.view.GlobalRolesView;
+import org.mtuci.empstats.module.permission.view.RolesView;
+import org.mtuci.empstats.module.permission.view.UsersView;
+import org.zenframework.z8.base.form.Desktop;
+
+[entry]
+[icon "fa-shield"]
+[displayName "Доступ"]
+public class PermissionDesktop extends Desktop {
+
+	UsersView usersView;
+	GlobalRolesView globalRolesView;
+	RolesView rolesView;
+}

@@ -1,0 +1,42 @@
+import org.zenframework.z8.base.query.Query;
+import org.zenframework.z8.base.table.Table;
+import org.zenframework.z8.lang.Object;
+
+public class RoleData {
+	public guid id;
+	public string name;
+	public string desc;
+	public string moduleName;
+	public string[Table] tables;
+	public Query[] requests;
+	public int[Object] entries;
+
+	public static RoleData init(guid id, string name, string desc) {
+		return init(id, name, desc, string[Table] {}, Table[] {}, int[Query] {});
+	}
+
+	public static RoleData init(guid id, string name, string desc, string[Table] tables) {
+		return init(id, name, desc, tables, Table[] {}, int[Query] {});
+	}
+
+	public static RoleData init(guid id, string name, string desc, string[Table] tables, Query[] requests) {
+		return init(id, name, desc, tables, requests, int[Query] {});
+	}
+
+	public static RoleData init2(guid id, string name, string desc, string[Table][guid] tables, Query[] requests, int[Object] entries) {
+		if (!tables.containsKey(id))
+			throw "RoleData.bl: Table dict have not role id '" + id + "'";
+		return init(id, name, desc, tables[id], requests, entries);
+	}
+
+	public static RoleData init(guid id, string name, string desc, string[Table] tables, Query[] requests, int[Object] entries) {
+		RoleData me;
+		me.id = id;
+		me.name = name;
+		me.desc = desc;
+		me.tables = tables;
+		me.requests = requests;
+		me.entries = entries;
+		return me;
+	}
+}

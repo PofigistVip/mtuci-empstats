@@ -1,0 +1,30 @@
+import org.mtuci.empstats.core.NameField;
+import org.mtuci.empstats.core.ShortNameField;
+import org.zenframework.z8.base.table.Table;
+
+[generatable]
+[name "Типы подразделений"]
+[displayName "Типы подразделений"]
+public class ТипПодразделения extends Table {
+
+	[displayName "Тип"]
+	ShortNameField shortName;
+	shortName.length = 128;
+
+	[displayName "Тип"] NameField name;
+	name.length = 128;
+
+	records {
+		[name "Руководство"]
+		Руководство = '5A2F0B00-C087-4A8E-AA2E-36F18B16F347';
+
+		[name "Отдел кадров"]
+		ОтделКадров = '1DA0338A-5033-42DA-94AB-90FA5716EE60';
+
+		[name "Бухгалтерия"]
+		Бухгалтерия = 'D46B6E0E-D22F-4C05-8BB6-EFE6576B5DA7';
+
+		[name "Подразделение"]
+		Подразделение = '719056C7-21A2-4FED-B34F-BADA9DB05411';
+	}
+}

@@ -1,0 +1,304 @@
+import org.mtuci.empstats.core.ЭЦП;
+import org.mtuci.empstats.module.core.model.Подразделение;
+import org.mtuci.empstats.module.core.model.Пользователь;
+import org.mtuci.empstats.module.core.model.Статус;
+import org.mtuci.empstats.module.core.model.СущностьИстории;
+import org.mtuci.empstats.module.core.model.ШтатноеРасписание;
+import org.mtuci.empstats.util.ИсторияLogger;
+import org.zenframework.z8.base.application.Application;
+import org.zenframework.z8.base.crypto.MD5;
+import org.zenframework.z8.base.json.JsonObject;
+import org.zenframework.z8.base.table.RecordLock;
+import org.zenframework.z8.base.table.Table;
+import org.zenframework.z8.base.table.value.BoolExpression;
+import org.zenframework.z8.base.table.value.BoolField;
+import org.zenframework.z8.base.table.value.DateField;
+import org.zenframework.z8.base.table.value.Field;
+import org.zenframework.z8.base.table.value.IntField;
+import org.zenframework.z8.base.table.value.Link;
+import org.zenframework.z8.base.table.value.StringExpression;
+import org.zenframework.z8.base.table.value.StringField;
+import org.zenframework.z8.base.table.value.TextField;
+
+[generatable]
+[name "Табель"]
+[displayName "Табель"]
+public class Табель extends Table {
+	public Подразделение подразделение;
+	[name "Подразделение"] public Link подразделениеId = подразделение;
+
+	[name "Период"]
+	[displayName "Период"]
+	public DateField период;
+
+	Статус статус;
+	[name "Статус"] public Link статусId = статус;
+	статусId.defaultValue = Статус.Черновик;
+
+	public StringExpression icon = (статусId == Статус.Черновик).IIF("fa-file-o", (статусId == Статус.ПроверкаК || статусId == Статус.ПроверкаБ).IIF("fa-clock-o", (статусId == Статус.Принят).IIF("fa-check", "fa-exclamation-triangle")));
+	extraFields = { icon };
+
+	ШтатноеРасписание исполнитель;
+	[name "Исполнитель"] public Link исполнительId = исполнитель;
+
+	[name "Дата подписания"]
+	public DateField датаПодписания;
+
+	[name "Сообщение"]
+	public StringField сообщение;
+	сообщение.length = 512;
+
+	[name "Дата сообщения"]
+	public DateField датаСообщения;
+
+	[name "ЭЦП"]
+	public TextField эцп;
+
+	[name "Номер корректировки"]
+	public IntField номерКорректировки;
+
+	Табель актуальный;
+	[name "Актуальный табель"]
+	public Link актуальныйТабельId = актуальный;
+
+	[displayName "Номер корректировки"]
+	public StringExpression номерКорректировкиStr = "Корректировка номер " + номерКорректировки.sql_int().toString();
+
+	[name "Число отклонений"]
+	public IntField числоОтклонений;
+
+	[name "Был отклонён бухгалтерией"]
+	public BoolField былОтклонёнБухгалтерией;
+
+	BoolExpression isАктуальный = актуальныйТабельId == guid.Null;
+
+	[displayName "Статус"]
+	public StringExpression статусStr = статус.name +
+		(числоОтклонений != 0 && (статусId == Статус.ПроверкаК || статусId == Статус.ПроверкаБ)).IIF(" (" + числоОтклонений.sql_int().toString() + ")", "");
+
+	public void сформировать(date дата) {
+		Подразделение подразделение;
+		Field[] fields = { подразделение.recordId };
+
+		подразделение.read(fields, подразделение.типId != guid.Null);
+
+		while(подразделение.next())
+			сформировать(дата, подразделение.recordId());
+	}
+
+	public void сформировать(date дата, guid подразделение) {
+		guid табель = табель(дата, подразделение);
+		ТабельСотрудника табельСотрудника;
+		табельСотрудника.priority = 100;
+		табельСотрудника.сформировать(табель, дата, подразделение);
+	}
+
+	public guid табель(date дата, guid подразделение) {
+		дата = дата.truncMonth();
+
+		Field[] fields = { recordId };
+
+		if(readFirst(fields, период == дата && подразделениеId == подразделение)) {
+			Application.info("Уже существует");
+			return recordId();
+		}
+
+		lock = RecordLock.Destroy;
+		период = дата;
+		подразделениеId = подразделение;
+		return create();
+	}
+
+	public guid проверитьСтатус(guid табель, guid статус) {
+		Field[] fields = { статусId };
+		return проверитьСтатус(табель, статус, fields);
+	}
+
+	public guid проверитьСтатус(guid табель, guid статус, Field[] fields) {
+		guid[] статусы = { статус };
+		return проверитьСтатус(табель, статусы, fields);
+	}
+
+	public guid проверитьСтатус(guid табель, guid[] статусы) {
+		Field[] fields = { статусId };
+		return проверитьСтатус(табель, статусы, fields);
+	}
+
+	public guid проверитьСтатус(guid табель, guid[] статусы, Field[] fields) {
+		fields.add(статусId);
+
+		if(!readRecord(табель, fields))
+			throw "Запись '" + табель + "' не существует.";
+
+		guid статус = статусId.get();
+		if(!статусы.contains(статус))
+			throw "Неверный статус. Обновите данные.";
+
+		return статус;
+	}
+
+	private string getDataHash(guid табельId) {
+		ТабельСотрудника табельСотрудника;
+		Field[] fields = { табельСотрудника.шр.сотрудник.фио, табельСотрудника.шр.должность.name, табельСотрудника.дни };
+		Field[] orderBy = { табельСотрудника.recordId };
+		табельСотрудника.read(fields, orderBy, табельСотрудника.табельId == табельId);
+
+		string data;
+		while(табельСотрудника.next())
+			data += табельСотрудника.шр.сотрудник.фио.get() + ";" + табельСотрудника.шр.должность.name.get() + ";" + табельСотрудника.дни.get() + ";";
+
+		return MD5.hex(data);
+	}
+
+	public void подписать(guid id, ЭЦП эцп) {
+		guid[] статусы = { Статус.Черновик, Статус.Отклонен };
+		guid статус = проверитьСтатус(id, статусы, Field[] { былОтклонёнБухгалтерией, номерКорректировки });
+
+		bool сразуВБухгалтерию = былОтклонёнБухгалтерией.get()
+		                        || номерКорректировки.get() > 0;
+
+//		if(эцп.data != getDataHash(табель))
+//			throw "Табель изменился. Обновите данные";
+
+		this.статусId = сразуВБухгалтерию ? Статус.ПроверкаБ : Статус.ПроверкаК;
+		this.эцп = эцп.toJson();
+		this.исполнительId = Пользователь.штатноеРасписаниеId();
+		this.датаПодписания = date.now();
+		this.сообщение = "";
+		this.датаСообщения = date.Min;
+		update(id);
+
+		if (сразуВБухгалтерию) {
+			создатьИсторию(id, "Подписан. Ожидает проверки бухгалтерией");
+		} else {
+			создатьИсторию(id, "Подписан. Ожидает проверки отделом кадров");
+		}
+	}
+
+	public void принятьОК(guid id) {
+		проверитьСтатус(id, Статус.ПроверкаК);
+
+		this.статусId = Статус.ПроверкаБ;
+		this.сообщение = "";
+		this.датаСообщения = date.Min;
+		update(id);
+
+		создатьИсторию(id, "Проверен отделом кадров. Ожидает проверки бухгалтерией");
+	}
+
+	public void принятьБ(guid id) {
+		проверитьСтатус(id, Статус.ПроверкаБ);
+
+		this.статусId = Статус.Принят;
+		this.сообщение = "";
+		this.датаСообщения = date.Min;
+		update(id);
+
+		создатьИсторию(id, "Проверен бухгалтерией");
+	}
+
+	public void отклонитьОК(guid id, string сообщение) {
+		guid[] статусы = { Статус.ПроверкаК };
+		guid статус = проверитьСтатус(id, статусы, Field[] { числоОтклонений });
+
+		статусId = Статус.Отклонен;
+		this.сообщение = сообщение;
+		датаСообщения = date.now();
+		числоОтклонений = числоОтклонений.get() + 1;
+		былОтклонёнБухгалтерией = false;
+		update(id);
+
+		создатьИсторию(id, "Отклонен отделом кадров", сообщение);
+	}
+
+	public void отклонитьБ(guid id, string сообщение) {
+		guid[] статусы = { Статус.ПроверкаБ };
+		guid статус = проверитьСтатус(id, статусы, Field[] { числоОтклонений });
+
+		статусId = Статус.Отклонен;
+		this.сообщение = сообщение;
+		датаСообщения = date.now();
+		числоОтклонений = числоОтклонений.get() + 1;
+		былОтклонёнБухгалтерией = true;
+		update(id);
+
+		создатьИсторию(id, "Отклонен бухгалтерией", сообщение);
+	}
+
+	public void создатьКорректировку(guid id) {
+		guid[] статусы = { Статус.Принят };
+		проверитьСтатус(id, статусы, Field[] { период, подразделениеId, номерКорректировки });
+
+		Табель корректировка;
+		корректировка.lock = RecordLock.Destroy;
+		корректировка.период = период.get();
+		корректировка.подразделениеId = подразделениеId.get();
+		корректировка.номерКорректировки = номерКорректировки.get() + 1;
+		guid корректировкаId = корректировка.create();
+		ТабельСотрудника табельСотрудника;
+		табельСотрудника.копияДляТабеля(id, корректировкаId);
+		guid старыйАктуальныйId = id;
+		актуальныйТабельId = корректировкаId;
+		update(id);
+		if (старыйАктуальныйId != guid.Null) {
+			актуальныйТабельId = корректировкаId;
+			update(актуальныйТабельId == старыйАктуальныйId);
+		}
+		Application.responseWriter().writeProperty("корректировкаId", корректировкаId);
+	}
+
+	public void обнулитьТабель(guid id) {
+		guid[] статусы = { Статус.Черновик };
+		проверитьСтатус(id, статусы, Field[] { recordId });
+
+		ТабельСотрудника тбс;
+		тбс.read(Field[] { тбс.recordId, тбс.дни }, тбс.табельId == id);
+		while (тбс.next()) {
+			ТабельСотрудника тбсПустой;
+			тбсПустой.рабочихДнейФакт = 0;
+			тбсПустой.рабочихДнейПлан = 0;
+			JsonObject дни = тбс.дни.get();
+			JsonObject дниПустые;
+			дниПустые.put("date", дни.getString("date"));
+			дниПустые.put("план", new JsonObject);
+			дниПустые.put("факт", new JsonObject);
+			дниПустые.put("планSave", дни.getJsonObject("план"));
+			дниПустые.put("фактSave", дни.getJsonObject("факт"));
+			тбсПустой.дни = дниПустые;
+			тбсПустой.update(тбс.recordId());
+		}
+	}
+
+	public void переформировать(guid id) {
+		guid[] статусы = { Статус.Черновик, Статус.Отклонен };
+		проверитьСтатус(id, статусы, Field[] { recordId, период, подразделениеId });
+
+		new ТабельСотрудника.сформировать(id, период.get(), подразделениеId.get());
+	}
+
+	public void удалить(guid табель) {
+		guid[] статусы = { Статус.Черновик };
+		проверитьСтатус(табель, статусы, Field[] { recordId });
+
+		ТабельСотрудника сотр;
+		сотр.destroy(сотр.табельId == табель);
+
+		удалитьИсторию(табель);
+
+		destroy(табель);
+	}
+
+	private ИсторияLogger hist = ИсторияLogger.getInstance(СущностьИстории.Табель);
+
+	public guid создатьИсторию(guid id, string действие) {
+		return hist.создать(id, действие);
+	}
+
+	public guid создатьИсторию(guid id, string действие, string сообщение) {
+		return hist.создать( id, действие, сообщение);
+	}
+
+	public void удалитьИсторию(guid id) {
+		hist.удалить(id);
+	}
+}

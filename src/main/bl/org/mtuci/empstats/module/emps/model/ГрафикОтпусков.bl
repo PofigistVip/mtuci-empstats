@@ -1,0 +1,28 @@
+import org.mtuci.empstats.core.ProjTable;
+import org.mtuci.empstats.module.core.model.Сотрудник;
+import org.zenframework.z8.base.table.value.DateField;
+import org.zenframework.z8.base.table.value.Link;
+
+[generatable]
+[name "График отпусков"]
+[displayName "График отпусков"]
+public class ГрафикОтпусков extends ProjTable {
+
+	public Сотрудник сотрудник;
+	public ВидОтпуска вид;
+
+
+	[name "Сотрудник"] public Link сотрудникId = сотрудник;
+	[name "Вид"] public Link видId = вид;
+
+
+	[name "Дата"]
+	[displayName "Дата"]
+	public DateField дата;
+	дата.indexed = true;
+
+	[name "Срок"]
+	[displayName "Срок"]
+	public DateField срок;
+	срок.indexed = true;
+}

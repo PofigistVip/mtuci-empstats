@@ -1,0 +1,21 @@
+import org.zenframework.z8.base.table.RecordLock;
+import org.zenframework.z8.base.table.system.Roles;
+import org.zenframework.z8.base.table.value.BoolExpression;
+import org.zenframework.z8.base.table.value.Join;
+import org.zenframework.z8.base.table.value.JoinType;
+
+public class ProjRole extends Roles {
+
+	public GlobalRoleRole globalRoleRole;
+
+	[displayName "Право доступа"] name;
+	[displayName "Описание"] description;
+
+	[icon "fa-cog"]
+	[displayName "Создано системой"]
+	public BoolExpression isSystem = lock == RecordLock.Full;
+
+	public Join globalRoleRoleJoin = recordId.sql_guid() == globalRoleRole.rolesId;
+	globalRoleRoleJoin.query = globalRoleRole;
+	globalRoleRoleJoin.joinType = JoinType.Inner;
+}

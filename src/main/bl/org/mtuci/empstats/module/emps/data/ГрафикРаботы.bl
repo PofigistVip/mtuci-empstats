@@ -1,0 +1,17 @@
+import org.zenframework.z8.lang.Object;
+
+
+public class ГрафикРаботы extends Object {
+
+	public int[] график(date дата) {
+		int[] график;
+
+		date dt = дата;
+		for(int i = 0; i < дата.daysInMonth(); i += 1) {
+			график.add(dt.dayOfWeek() == 1 || dt.dayOfWeek() == 7 ? 0 : 8);
+			dt = dt.addDay(1);
+		}
+
+		return график;
+	}
+}

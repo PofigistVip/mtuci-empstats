@@ -1,0 +1,23 @@
+import org.mtuci.empstats.core.ProjTable;
+import org.zenframework.z8.base.table.system.Entries;
+import org.zenframework.z8.base.table.value.IntField;
+import org.zenframework.z8.base.table.value.Link;
+
+[generatable]
+[name "Roles entries"]
+[displayName "Компоненты"]
+public class RoleEntry extends ProjTable {
+
+	public ProjRole role;
+	public Entries entry;
+
+	[name "Role"]
+	public Link roleId = role;
+
+	[name "Entry"]
+	public Link entryId = entry;
+
+	[name "Position"]
+	[displayName "Позиция"]
+	public IntField position;
+}

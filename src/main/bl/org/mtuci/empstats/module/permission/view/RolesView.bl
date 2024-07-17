@@ -1,0 +1,104 @@
+import org.mtuci.empstats.module.permission.model.ProjRole;
+import org.mtuci.empstats.module.permission.model.RoleEntry;
+import org.zenframework.z8.base.form.Listbox;
+import org.zenframework.z8.base.table.system.RoleFieldAccess;
+import org.zenframework.z8.base.table.system.RoleRequestAccess;
+import org.zenframework.z8.base.table.system.RoleTableAccess;
+
+[request true]
+[displayName "Права доступа"]
+public class RolesView extends ProjRole {
+
+	RoleTableAccess rta;
+	rta.read.editable = true;
+	[icon "fa-eye"] rta.read;
+
+	rta.write.editable = true;
+	[icon "fa-pencil"] rta.write;
+
+	rta.create.editable = true;
+	[icon "fa-file-o"] rta.create;
+
+	rta.copy.editable = true;
+	[icon "fa-copy"] rta.copy;
+
+	rta.destroy.editable = true;
+	[icon "fa-trash"] rta.destroy;
+
+	rta.columns = { rta.tables.name,
+					rta.tables.displayName,
+					rta.read,
+					rta.write,
+					rta.create,
+					rta.copy,
+					rta.destroy };
+
+	[displayName "Таблицы"]
+	Listbox tablesListbox;
+	tablesListbox.query = rta;
+	tablesListbox.link = rta.role;
+	tablesListbox.flex = 1;
+	tablesListbox.sortFields = { rta.tables.name };
+	tablesListbox.dependencies = { fieldsListbox };
+	
+	RoleFieldAccess rfa;
+	rfa.fields.name.width = 150;
+	rfa.fields.displayName.width = 150;
+	rfa.fields.type.width = 90;
+
+	rfa.read.editable = true;
+	[icon "fa-eye"] rfa.read;
+
+	rfa.write.editable = true;
+	[icon "fa-pencil"] rfa.write;
+
+	rfa.columns = { rfa.fields.name,
+					rfa.fields.displayName,
+					rfa.fields.type,
+					rfa.read,
+					rfa.write };
+
+	[displayName "Поля"]
+	Listbox fieldsListbox;
+	fieldsListbox.query = rfa;
+	fieldsListbox.link = rfa.role;
+	fieldsListbox.flex = 1;
+	fieldsListbox.sortFields = { rfa.fields.position };
+	fieldsListbox.dependency = rfa.fields.table;
+	fieldsListbox.dependsOn = rta.table;
+
+	RoleRequestAccess rra;
+	rra.execute.editable = true;
+	[icon "fa-eye"] rra.execute;
+
+	rra.columns = { rra.requests.name,
+					rra.requests.classId,
+					rra.execute };
+
+	[displayName "Запросы"]
+	Listbox requestsListbox;
+	requestsListbox.query = rra;
+	requestsListbox.link = rra.role;
+	requestsListbox.sortFields = { rra.requests.name };
+	requestsListbox.flex = 1;
+
+	colCount = 2;
+
+	[displayName "Описание"] description;
+
+	names = { name };
+	columns = { name, description, isSystem };
+	controls = { name, description, tablesListbox, fieldsListbox, requestsListbox, entriesList };
+	sortFields = { name };
+
+	RoleEntry re;
+	re.position.editable = true;
+	re.columns = { re.entry.name, re.position };
+
+	[displayName "Компоненты"]
+	Listbox entriesList;
+	entriesList.query = re;
+	entriesList.link = re.roleId;
+	entriesList.sortFields = { re.position };
+	entriesList.flex = 1;
+}

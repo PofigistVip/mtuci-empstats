@@ -1,0 +1,49 @@
+import org.mtuci.empstats.module.core.model.Сотрудник;
+import org.mtuci.empstats.module.core.model.ШтатноеРасписание;
+import org.zenframework.z8.base.form.Listbox;
+import org.zenframework.z8.base.form.Section;
+import org.zenframework.z8.base.table.SortDirection;
+
+[request true]
+[displayName "Сотрудники"]
+public class Сотрудники extends Сотрудник {
+
+	[displayName "Сотрудник"] фио;
+	[displayName "Сотрудник"] полноеИмя;
+	полноеИмя.colSpan = 2;
+
+
+	Section контрагентSection;
+	контрагентSection.colCount = 4;
+	контрагентSection.controls = {
+		фамилия, имя, отчество, пользователь.name,
+		description
+	};
+
+	description.colSpan = 4;
+
+	public ШтатноеРасписание шр;
+	шр.должность.name.editable = true;
+	шр.подразделение.name.editable = true;
+	шр.дата.editable = true;
+	шр.срок.editable = true;
+
+	public Listbox должности;
+	должности.query = шр;
+	должности.link = шр.сотрудникId;
+	должности.columns = { шр.должность.name, шр.подразделение.name, шр.дата, шр.срок };
+	шр.дата.sortDirection = SortDirection.Desc;
+	должности.sortFields = { шр.дата };
+	должности.colSpan = 3;
+	должности.flex = 1;
+
+	colCount = 1;
+	sortFields = { фио };
+
+	names = { фио, };
+	controls = {
+		контрагентSection,
+		должности
+	};
+	quickFilters = { фио };
+}

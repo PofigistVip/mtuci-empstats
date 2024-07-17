@@ -1,0 +1,277 @@
+import org.mtuci.empstats.core.ЭЦП;
+import org.mtuci.empstats.module.core.model.История;
+import org.mtuci.empstats.module.core.model.Пользователь;
+import org.mtuci.empstats.module.core.model.Статус;
+import org.mtuci.empstats.module.core.model.ТипПодразделения;
+import org.mtuci.empstats.module.emps.model.Табель;
+import org.mtuci.empstats.module.emps.model.ТабельСотрудника;
+import org.zenframework.z8.base.application.Application;
+import org.zenframework.z8.base.form.ActionGroup;
+import org.zenframework.z8.base.form.Listbox;
+import org.zenframework.z8.base.form.Tab;
+import org.zenframework.z8.base.form.TabControl;
+import org.zenframework.z8.base.form.action.Action;
+import org.zenframework.z8.base.form.action.ActionType;
+import org.zenframework.z8.base.form.action.Parameter;
+import org.zenframework.z8.base.form.report.Report;
+import org.zenframework.z8.base.query.Query;
+import org.zenframework.z8.base.table.SortDirection;
+import org.zenframework.z8.base.table.value.FieldType;
+
+[request true]
+[ui "Кадры_Табели"]
+[displayName "Учет рабочего времени"]
+public class Табели extends Табель {
+	[displayName "Подписать"]
+	[icon "fa-pencil"]
+	Action подписать = class {
+		type = ActionType.Primary;
+		parameters = { Parameter.create("ЭЦП", FieldType.String, false) };
+
+		virtual protected void execute(guid recordId, Query context, guid[] selected, Query query) {
+			new Табель.подписать(recordId, ЭЦП.fromJson((string)parameters[0]));
+		}
+	};
+
+	[displayName "Принять"]
+	[icon "fa-check"]
+	Action принятьОК = class {
+		type = ActionType.Primary;
+		virtual protected void execute(guid recordId, Query context, guid[] selected, Query query) {
+			new Табель.принятьОК(recordId);
+		}
+	};
+
+	[displayName "Принять"]
+	[icon "fa-check"]
+	Action принятьБ = class {
+		type = ActionType.Primary;
+		virtual protected void execute(guid recordId, Query context, guid[] selected, Query query) {
+			new Табель.принятьБ(recordId);
+		}
+	};
+
+	[displayName "Отклонить"]
+	[icon "fa-trash"]
+	Action отклонитьОК = class {
+		type = ActionType.Danger;
+		parameters = { Parameter.create("Причина", FieldType.String, false) };
+
+		virtual protected void execute(guid recordId, Query context, guid[] selected, Query query) {
+			new Табель.отклонитьОК(recordId, (string)parameters[0]);
+		}
+	};
+
+	[displayName "Отклонить"]
+	[icon "fa-trash"]
+	Action отклонитьБ = class {
+		type = ActionType.Danger;
+		parameters = { Parameter.create("Причина", FieldType.String, false) };
+
+		virtual protected void execute(guid recordId, Query context, guid[] selected, Query query) {
+			new Табель.отклонитьБ(recordId, (string)parameters[0]);
+		}
+	};
+
+	[displayName "Создать корректировку"]
+	[icon "fa-clone "]
+	[ui "Кадры_Табели_КорректировкаAction"]
+	Action создатьКорректировку = class {
+		type = ActionType.Primary;
+		virtual protected void execute(guid recordId, Query context, guid[] selected, Query query) {
+			new Табель.создатьКорректировку(recordId);
+		}
+	};
+	
+	[displayName "Обнулить табель"]
+	[icon "fa-eraser"]
+	Action обнулитьТабель = class {
+		type = ActionType.Danger;
+		virtual protected void execute(guid recordId, Query context, guid[] selected, Query query) {
+			new Табель.обнулитьТабель(recordId);
+		}
+	};
+
+	[displayName "Удалить табель"]
+	[icon "fa-trash"]
+	Action удалить = class {
+		type = ActionType.Danger;
+		virtual protected void execute(guid recordId, Query context, guid[] selected, Query query) {
+			if (!user().isAdministrator())
+				throw "Только администратор может сделать это";
+			new Табель.удалить(recordId);
+		}
+	};
+
+	[displayName "Переформировать"]
+	[icon "fa-trash"]
+	Action переформировать = class {
+		type = ActionType.Danger;
+		virtual protected void execute(guid recordId, Query context, guid[] selected, Query query) {
+			new Табель.переформировать(recordId);
+			Application.info("Табель переформирован");
+		}
+	};
+
+	[displayName "Создать табель"]
+	[icon "fa-plus"]
+	Action создатьТабель = class {
+		type = ActionType.Default;
+
+		Parameter дата = Parameter.create("дата", FieldType.Date, false);
+		Parameter подразделение = Parameter.create("подразделение", FieldType.Guid, false);
+		parameters = { дата, подразделение };
+
+		virtual protected void execute(guid[] recordIds, Query context, guid[] selected, Query query) {
+			if (!user().isAdministrator())
+				throw "Только администратор может сделать это";
+			new Табель.сформировать(дата.date(), подразделение.guid());
+		}
+	};
+
+	private ТабельСотрудника табельСотрудника;
+
+	[ui "Кадры_Табели_Табель"]
+	private Listbox табель;
+	табель.query = табельСотрудника;
+	табель.link = табельСотрудника.табельId;
+	табель.flex = 1;
+	табель.columns = {
+		табельСотрудника.шр.сотрудник.фио,
+		табельСотрудника.шр.должность.name,
+		табельСотрудника.дни
+	};
+	табель.sortFields = { табельСотрудника.шр.сотрудник.фио };
+
+	private История табельИстория;
+	[displayName "Автор"] табельИстория.автор.фио;
+
+	private Listbox история;
+	история.readOnly = true;
+	история.query = табельИстория;
+	//история.link = табельИстория.табельId;
+	история.flex = 1;
+	история.columns = {
+		табельИстория.createdAt,
+		табельИстория.действие,
+		табельИстория.сообщение,
+		табельИстория.автор.фио
+	};
+	табельИстория.createdAt.sortDirection = SortDirection.Desc;
+	табельИстория.sortFields = { табельИстория.createdAt };
+
+	public Табель табельВерсия;
+
+	public Listbox версии;
+	версии.query = табельВерсия;
+	версии.link = табельВерсия.актуальныйТабельId;
+	версии.flex = 1;
+	версии.columns = {
+		табельВерсия.номерКорректировкиStr
+	};
+	табельВерсия.номерКорректировки.sortDirection = SortDirection.Desc;
+	табельВерсия.sortFields = { табельВерсия.номерКорректировки };
+
+	[displayName "Табель"]
+	public Tab табельTab;
+	[displayName "Причина отклонения"][icon "fa-exclamation-triangle"] сообщение;
+	табельTab.controls = { сообщение, табель };
+
+	[displayName "Сообщения"]
+	public Tab историяTab;
+	историяTab.controls = { история };
+
+	[displayName "Предыдущие версии"]
+	public Tab версииTab;
+	версииTab.controls = { версии };
+
+	public TabControl табельTabs;
+	табельTabs.flex = 1;
+	табельTabs.colSpan = 4;
+	табельTabs.tabs = { табельTab, историяTab, версииTab };
+
+	private ActionGroup actionGroup;
+	actionGroup.colSpan = 4;
+	actionGroup.actions = { подписать, создатьКорректировку, обнулитьТабель, отклонитьОК, принятьОК, отклонитьБ, принятьБ, переформировать };
+
+	private ActionGroup adminRow;
+	adminRow.colSpan = 4;
+	adminRow.actions = { создатьТабель, удалить };
+
+	период.format = "F Y";
+	период.readOnly = true;
+	статусId.readOnly = true;
+	подразделениеId.readOnly = true;
+	подразделение.name.colSpan = 2;
+
+	period = период;
+
+	controls = { период, статусStr, подразделение.name, табельTabs, actionGroup };
+	names = { период, статусStr, номерКорректировки };
+	extraFields = { номерКорректировки, подразделение.тип.name, статусId };
+	quickFilters = { подразделение.shortName };
+
+	период.sortDirection = SortDirection.Desc;
+	sortFields = { период, подразделение.shortName };
+
+	[displayName "Табель (ОКУД 0504421)"]
+	[icon "fa-list-ol"]
+	private Report табель0504421 = class {
+		name = "Табель 0504421";
+		template = "Табель 0504421";
+
+		private Табель табель;
+		private ТабельСотрудника позиции;
+
+		virtual protected void prepare(guid документId) {
+			табель.addWhere(табель.recordId == документId);
+			позиции.addWhere(позиции.табельId == документId);
+
+			super.prepare(документId);
+		}
+	};
+
+	virtual protected void constructor() {
+		super.constructor();
+
+		if(Пользователь.кадровик() || Пользователь.бухгалтер()) {
+			names = { период, подразделение.shortName, статусStr };
+		}
+
+		if (user().isAdministrator()) {
+			controls.add(adminRow);
+		}
+	}
+
+	virtual protected sql_bool where() {
+		sql_bool where = super.where() && актуальныйТабельId == guid.Null;
+
+		if(user().isAdministrator())
+			return where;
+
+
+		sql_bool подконтрольные = true;
+		if (Пользователь.подачаТабеля()) {
+			if (Пользователь.кадровик())
+				подконтрольные = подразделениеId == Пользователь.подразделениеId() || подразделение.типId == ТипПодразделения.Руководство
+					|| подразделениеId == '00000000-0000-0000-0000-0001A591B5FA' // отдел резерва
+					|| подразделениеId == '00000000-0000-0000-0000-0001A9E80673'; // юр отдел
+			else {
+				подконтрольные = подразделениеId == Пользователь.подразделениеId();
+			}
+		}
+
+		sql_bool проверка = true;
+		if (Пользователь.кадровик() || Пользователь.бухгалтер()) {
+			проверка = статусId != Статус.Черновик;
+		}
+
+		if ((Пользователь.подачаТабеля()) && (Пользователь.кадровик() || Пользователь.бухгалтер())) {
+			return where && ((подконтрольные) || (проверка));
+		} else if (Пользователь.подачаТабеля()) {
+			return where && подконтрольные;
+		} else if (Пользователь.кадровик() || Пользователь.бухгалтер())
+			return where && проверка;
+		return false;
+	}
+}

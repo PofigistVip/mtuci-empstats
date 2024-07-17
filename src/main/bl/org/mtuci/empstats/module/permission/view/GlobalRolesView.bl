@@ -1,0 +1,38 @@
+import org.mtuci.empstats.module.core.model.Пользователь;
+import org.mtuci.empstats.module.permission.viewModel.GlobalRolesVModel;
+import org.zenframework.z8.base.form.Listbox;
+import org.zenframework.z8.base.form.action.Action;
+import org.zenframework.z8.base.query.Query;
+
+[request true]
+[displayName "Роли"]
+public class GlobalRolesView extends GlobalRolesVModel {
+
+	recordId.valueFor = recordId;
+
+	[displayName "Восстановить доступы"]
+	Action восстановитьДоступы = class {
+		virtual protected void execute(guid[] recordIds, Query context, guid[] selected, Query query) {
+			Пользователь.resetAllRoles();
+		}
+	};
+
+	actions = { восстановитьДоступы };
+
+	names = { name };
+	columns = { name, description, isSystem };
+	controls = { name, description, isSystem, permsList };
+	colCount = 3;
+
+	[displayName "Права доступа"]
+	Listbox permsList;
+	permsList.query = gRoleRole;
+	permsList.link = gRoleRole.gRoleId;
+	permsList.columns = { gRoleRole.roles.name, gRoleRole.roles.description };
+	permsList.sortFields = { gRoleRole.roles.name };
+	permsList.selector.link = gRoleRole.rolesId;
+	permsList.selector.columns = { gRoleRole.roles.name, gRoleRole.roles.description };
+	permsList.selector.sortFields = { gRoleRole.roles.name };
+	permsList.colSpan = 3;
+	permsList.flex = 1;
+}

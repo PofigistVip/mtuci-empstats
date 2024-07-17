@@ -1,0 +1,317 @@
+import org.mtuci.empstats.module.emps.КадрыModule;
+import org.mtuci.empstats.module.permission.PermissionModule;
+import org.mtuci.empstats.module.permission.data.GlobalRoleData;
+import org.mtuci.empstats.module.permission.data.RoleData;
+import org.mtuci.empstats.module.permission.model.GlobalRole;
+import org.mtuci.empstats.module.permission.model.GlobalRoleRole;
+import org.mtuci.empstats.module.permission.model.RoleEntry;
+import org.mtuci.empstats.util.DbUtil;
+import org.mtuci.empstats.util.LogUtil;
+import org.zenframework.z8.base.table.RecordLock;
+import org.zenframework.z8.base.table.Table;
+import org.zenframework.z8.base.table.system.Entries;
+import org.zenframework.z8.base.table.system.Fields;
+import org.zenframework.z8.base.table.system.Requests;
+import org.zenframework.z8.base.table.system.RoleFieldAccess;
+import org.zenframework.z8.base.table.system.RoleRequestAccess;
+import org.zenframework.z8.base.table.system.RoleTableAccess;
+import org.zenframework.z8.base.table.system.Roles;
+import org.zenframework.z8.base.table.system.Tables;
+import org.zenframework.z8.base.table.value.Aggregation;
+import org.zenframework.z8.base.table.value.Field;
+import org.zenframework.z8.lang.Object;
+
+public class ModuleManager {
+
+	public Module[] modules = {
+		new PermissionModule,
+		new КадрыModule,
+	};
+
+	private LogUtil log;
+
+	public void afterSchemaGenerate() {
+		log.info("Инициализация модулей");
+
+		log.stepIn("Роли");
+		initRoles();
+		log.stepOut();
+
+		log.stepIn("Глобальные роли");
+		initGlobalRoles();
+		log.stepOut();
+
+		log.info("Инициализация модулей завершена");
+	}
+
+	private void initRoles() {
+		RoleData[guid] perms;
+		for (Module m : modules) {
+			log.stepIn("Модуль " + m.className());
+			RoleData[] mPerms = m.getRoles();
+			for (RoleData perm : mPerms) {
+				if (perms.containsKey(perm.id))
+					log.throwError("Permission id dyplicate: " + perm.id);
+				perm.moduleName = m.moduleName();
+				perms.add(perm.id, perm);
+			}
+			log.stepOut();
+		}
+
+
+		Roles dbRole;
+		guid[] dbIds = dbRole.findRecords(dbRole.lock == RecordLock.Full);
+
+		for (RoleData perm : perms.values()) {
+			log.stepIn("Роль '" + perm.name + "'");
+			dbRole.name = perm.name;
+			dbRole.description = perm.desc.isEmpty() ? "Автоматически создано модулем '" + perm.moduleName +"'" : perm.desc;
+			dbRole.lock = RecordLock.Full;
+			DbUtil.createOrUpdate(dbRole, perm.id);
+
+			for (Table tbl : perm.tables.keys())
+				setTableAccess(perm.id, tbl, perm.tables[tbl]);
+	
+
+			guid[] reqIds = getRequestIds(perm.requests);
+			setRequestAccess(reqIds, perm.id);
+
+			setEntries(perm.entries, perm.id);
+			log.stepOut();
+		}
+		log.info("Всего/Новых/Обновлено: " + perms.size() + "/" + (perms.size() - dbIds.size()) + "/" + dbIds.size());
+	}
+
+	private void initGlobalRoles() {
+		GlobalRoleData[guid] roles;
+		for (Module m : modules) {
+			log.stepIn("Модуль " + m.className());
+			GlobalRoleData[] mRoles = m.getGlobalRoles();
+			for (GlobalRoleData role : mRoles) {
+				if (roles.containsKey(role.id))
+					log.throwError("Global role id dyplicate: " + role.id);
+				role.moduleName = m.moduleName();
+				roles.add(role.id, role);
+			}
+			log.stepOut();
+		}
+
+		GlobalRole dbRole;
+		guid[] dbIds = dbRole.findRecords(dbRole.lock == RecordLock.Full);
+
+		for (GlobalRoleData role : roles.values()) {
+			log.stepIn("Роль '" + role.name + "'");
+			dbRole.name = role.name;
+			dbRole.description = role.desc.isEmpty() ? "Автоматически создано модулем '" + role.moduleName +"'" : role.desc;
+			dbRole.lock = RecordLock.Full;
+			DbUtil.createOrUpdate(dbRole, role.id);
+
+			initRoleLinks(role);
+			log.stepOut();
+		}
+
+		log.info("Всего/Новых/Обновлено: " + roles.size() + "/" + (roles.size() - dbIds.size()) + "/" + dbIds.size());
+	}
+
+	private void initRoleLinks(GlobalRoleData role) {
+		if (role.roles.size() == 0)
+			throw "Global role '" + role.name + "'(" + role.id + ") haven't roles";
+
+		guid[] permNeeded;
+		permNeeded.addAll(role.roles);
+
+		GlobalRoleRole rolePerm;
+		rolePerm.rolesId.aggregation = Aggregation.Array;
+		if (rolePerm.aggregate(Field[] { rolePerm.rolesId }, rolePerm.gRoleId == role.id)) {
+			permNeeded.removeAll(rolePerm.rolesId.array());
+		}
+
+		for (guid permId : permNeeded) {
+			rolePerm.gRoleId = role.id;
+			rolePerm.rolesId = permId;
+			rolePerm.create();
+		}
+
+		rolePerm.destroy(!rolePerm.rolesId.inVector(role.roles) && rolePerm.gRoleId == role.id);
+	}
+
+	private void setTableAccess(guid role, Table table, string access) {
+		guid[] таблицы = getTableIds(Table[] { table });
+		guid[] поля = getFieldIds(таблицы);
+
+		setTableAccess(role, таблицы, поля, access);
+	}
+
+	private void setTableAccess(guid role, guid[] таблицы, guid[] поля, string access) {
+		bool read = access.indexOf("r") != -1;
+		bool create = access.indexOf("n") != -1;
+		bool write = access.indexOf("w") != -1;
+		bool copy = access.indexOf("c") != -1;
+		bool destroy = access.indexOf("d") != -1;
+		setTableAccess(role, таблицы, поля, read, write, create, copy, destroy);
+	}
+
+	private void setTableAccess(guid role, guid[] таблицы, guid[] поля, bool read, bool write, bool create, bool copy, bool destroy) {
+		RoleTableAccess tableAccess;
+		tableAccess.table.aggregation = Aggregation.Array;
+		if(tableAccess.aggregate(Field[] { tableAccess.table }, tableAccess.table.inVector(таблицы) && tableAccess.role == role)) {
+			guid[] существующиеТаблицы = tableAccess.table.array();
+			таблицы.removeAll(существующиеТаблицы);
+			
+			tableAccess.read = read;
+			tableAccess.write = write;
+			tableAccess.create = create;
+			tableAccess.copy = copy;
+			tableAccess.destroy = destroy;
+			tableAccess.update(tableAccess.table.inVector(существующиеТаблицы) && tableAccess.role == role);
+		}
+		
+				
+		for(guid таблица : таблицы) {
+			tableAccess.read = read;
+			tableAccess.write = write;
+			tableAccess.create = create;
+			tableAccess.copy = copy;
+			tableAccess.destroy = destroy;
+			tableAccess.table = таблица;
+			tableAccess.role = role;
+			
+			tableAccess.create();
+		}
+
+		RoleFieldAccess fieldAccess;
+		fieldAccess.field.aggregation = Aggregation.Array;
+		if(fieldAccess.aggregate(Field[] { fieldAccess.field }, fieldAccess.field.inVector(поля) && fieldAccess.role == role)) {
+			guid[] существующиеПоля = fieldAccess.field.array();
+			поля.removeAll(существующиеПоля);
+
+			fieldAccess.read = read;
+			fieldAccess.write = write;
+			fieldAccess.update(fieldAccess.field.inVector(существующиеПоля) && fieldAccess.role == role);
+		}
+
+		for(guid поле : поля) {
+			fieldAccess.read = read;
+			fieldAccess.write = write;
+			fieldAccess.field = поле;
+			fieldAccess.role = role;
+			
+			fieldAccess.create();
+		}
+	}
+
+	private void setRequestAccess(guid[] reqIds, guid roleId) {
+		RoleRequestAccess reqAccess;
+		reqAccess.request.aggregation = Aggregation.Array;
+		guid[] all;
+		all.addAll(reqIds);
+		if(reqAccess.aggregate(Field[] { reqAccess.request }, reqAccess.request.inVector(reqIds) && reqAccess.role == roleId)) {
+			guid[] existing = reqAccess.request.array();
+			reqIds.removeAll(existing);
+
+			reqAccess.execute = true;
+			reqAccess.update(reqAccess.request.inVector(existing) && reqAccess.role == roleId);
+		}
+
+		for(guid reqId : reqIds) {
+			reqAccess.execute = true;
+			reqAccess.request = reqId;
+			reqAccess.role = roleId;
+
+			reqAccess.create();
+		}
+
+		reqAccess.destroy(!reqAccess.request.inVector(all) && reqAccess.role == roleId);
+	}
+
+	private void setEntries(int[Object] entriesCls, guid roleId) {
+		Entries entries;
+		guid[string] entriesByClass = idsByValue(entries, entries.classId);
+		RoleEntry re;
+
+		guid[guid] existingEntries;
+		re.read(Field[] { re.entryId }, re.roleId == roleId);
+		while (re.next())
+			existingEntries.add(re.entryId.get(), re.recordId());
+
+		for (Object entry : entriesCls.keys()) {
+			guid entryId = entriesByClass[entry.className()] ?: guid.Null;
+			if (entryId == guid.Null) {
+				log.warning("Entry " + entry.className() + " isn't entry");
+				continue;
+			}
+			guid existingEntry = existingEntries[entryId] ?: guid.Null;
+			re.position = entriesCls[entry];
+			if (existingEntry == guid.Null) {
+				re.roleId = roleId;
+				re.entryId = entryId;
+				existingEntries.add(entryId, re.create());
+			} else {
+				re.update(existingEntry);
+			}
+		}
+
+		re.destroy(re.roleId == roleId && !re.recordId.inVector(existingEntries.values()));
+	}
+
+	private guid[string] idsByValue(Table table, Field field) {
+		guid[string] idByValues;
+		table.read(Field[] { field });
+		while (table.next()) {
+			string value = field.primary().toString();
+			if (idByValues.containsKey(value))
+				log.warning(table.name() + ": Повторяющееся значение (" + field.name() + "): " + value);
+			idByValues.add(value, table.recordId());
+		}
+		return idByValues;
+	}
+
+	private guid[] getTableIds(Table[] tables) {
+		string[] tableNames = classNames(tables);
+
+		Tables tbls;
+		tbls.recordId.aggregation = Aggregation.Array;
+
+		if(tbls.aggregate(Field[] {}, tbls.classId.inVector(tableNames)))
+			return tbls.recordId.array();
+
+		return guid[] {};
+	}
+
+	private guid[] getFieldIds(guid[] tables) {
+		Fields fields;
+		fields.recordId.aggregation = Aggregation.Array;
+
+		if(fields.aggregate(Field[] {}, fields.table.inVector(tables)))
+			return fields.recordId.array();
+
+		return guid[] {};
+	}
+
+	private guid[] getRequestIds(Object[] requests) {
+		string[] requestNames = classNames(requests);
+
+		Requests reqs;
+
+		guid[] ids;
+		reqs.read(Field[] { reqs.recordId, reqs.classId }, reqs.classId.inVector(requestNames));
+		while (reqs.next()) {
+			ids.add(reqs.recordId());
+			requestNames.remove(reqs.classId.get());
+		}
+
+		if (requestNames.isEmpty())
+			return ids;
+
+		log.warning("Не найдены request'ы: " + requestNames.join(", "));
+
+		return ids;
+	}
+
+	private string[] classNames(Object[] objects) {
+		string[] objectsCls;
+		for (Object o : objects)
+			objectsCls.add(o.className());
+		return objectsCls;
+	}
+}

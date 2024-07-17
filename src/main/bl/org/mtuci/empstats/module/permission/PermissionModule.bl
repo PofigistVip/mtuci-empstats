@@ -1,0 +1,78 @@
+import org.mtuci.empstats.core.Module;
+import org.mtuci.empstats.module.core.model.Пользователь;
+import org.mtuci.empstats.module.permission.data.RoleData;
+import org.mtuci.empstats.module.permission.model.GlobalRole;
+import org.mtuci.empstats.module.permission.model.GlobalRoleRole;
+import org.mtuci.empstats.module.permission.model.RoleEntry;
+import org.mtuci.empstats.module.permission.model.UserGlobalRole;
+import org.mtuci.empstats.module.permission.view.GlobalRolesView;
+import org.mtuci.empstats.module.permission.view.RolesView;
+import org.mtuci.empstats.module.permission.view.UsersView;
+import org.zenframework.z8.base.table.Table;
+import org.zenframework.z8.base.table.system.Entries;
+import org.zenframework.z8.base.table.system.Fields;
+import org.zenframework.z8.base.table.system.Requests;
+import org.zenframework.z8.base.table.system.RoleFieldAccess;
+import org.zenframework.z8.base.table.system.RoleRequestAccess;
+import org.zenframework.z8.base.table.system.RoleTableAccess;
+import org.zenframework.z8.base.table.system.Roles;
+import org.zenframework.z8.base.table.system.Tables;
+import org.zenframework.z8.lang.Object;
+
+public class PermissionModule extends Module {
+	virtual public string moduleName() {
+		return "Доступ";
+	}
+
+
+	public static guid PERM_ПРАВА_ДОСТУПА_READ = 'E648A0BA-E42A-43E6-94BE-3A48AAB3C22B';
+	public static guid PERM_ПРАВА_ДОСТУПА_EDIT = 'E0018D62-8890-44D8-BED9-107132004718';
+
+	public static guid PERM_РОЛИ_READ = 'B45244B1-7CF6-4BD4-94D2-9FBC6571AD8A';
+	public static guid PERM_РОЛИ_EDIT = 'E934AEED-A6BF-4927-8231-00AFC1EA98A9';
+
+	public static guid PERM_ПОЛЬЗОВАТЕЛИ_READ = '9652379D-A270-4E70-9F80-7348BAA7D8F1';
+	public static guid PERM_ПОЛЬЗОВАТЕЛИ_EDIT = 'AB4FF3AE-B6D9-4EA2-98B5-248AE3091657';
+
+	private Roles Roles;
+	private RoleTableAccess RoleTableAccess;
+	private RoleFieldAccess RoleFieldAccess;
+	private RoleRequestAccess RoleRequestAccess;
+	private RoleEntry RoleEntry;
+	private Tables Tables;
+	private Fields Fields;
+	private Requests Requests;
+	private Entries Entries;
+
+	private GlobalRole GlobalRole;
+	private GlobalRoleRole GlobalRoleRole;
+
+	private Пользователь Пользователь;
+	private UserGlobalRole UserGlobalRole;
+
+	private PermissionDesktop PermissionDesktop;
+
+	int[Object] доступEntry = { (PermissionDesktop, 3) };
+
+	string[Table][guid] tables = {
+		(PERM_ПРАВА_ДОСТУПА_READ, rTables(Table[] { Roles, RoleTableAccess, RoleFieldAccess, RoleRequestAccess, RoleEntry, Tables, Fields, Requests, Entries, })),
+		(PERM_ПРАВА_ДОСТУПА_EDIT, rwnd_rTables(Table[] { Roles, RoleTableAccess, RoleFieldAccess, RoleRequestAccess, RoleEntry, }, Table[] { Tables, Fields, Requests, Entries, })),
+
+		(PERM_РОЛИ_READ, rTables(Table[] { GlobalRole, GlobalRoleRole, Roles, })),
+		(PERM_РОЛИ_EDIT, rwnd_rTables(Table[] { GlobalRole, GlobalRoleRole, }, Table[] { Roles, })),
+
+		(PERM_ПОЛЬЗОВАТЕЛИ_READ, rTables(Table[] { Пользователь, UserGlobalRole, GlobalRole, })),
+		(PERM_ПОЛЬЗОВАТЕЛИ_EDIT, rwnd_rTables(Table[] { Пользователь, UserGlobalRole, }, Table[] { GlobalRole, })),
+	};
+
+	roles = {
+		RoleData.init2(PERM_ПРАВА_ДОСТУПА_READ, "Доступ: Права доступа (просмотр)", "Просмотр страницы 'Права доступа'", tables, Table[] { new RolesView }, доступEntry),
+		RoleData.init2(PERM_ПРАВА_ДОСТУПА_EDIT, "Доступ: Права доступа (редактирование)", "Редактирование записей на странице 'Права доступа'", tables, Table[] { new RolesView }, доступEntry),
+
+		RoleData.init2(PERM_РОЛИ_READ, "Доступ: Роли (просмотр)", "Просмотр страницы 'Роли'", tables, Table[] { new GlobalRolesView }, доступEntry),
+		RoleData.init2(PERM_РОЛИ_EDIT, "Доступ: Роли (редактирование)", "Редактирование записей на странице 'Роли'", tables, Table[] { new GlobalRolesView }, доступEntry),
+
+		RoleData.init2(PERM_ПОЛЬЗОВАТЕЛИ_READ, "Доступ: Пользователи (просмотр)", "Просмотр страницы 'Пользователи'", tables, Table[] { new UsersView }, доступEntry),
+		RoleData.init2(PERM_ПОЛЬЗОВАТЕЛИ_EDIT, "Доступ: Пользователи (редактирование)", "Редактирование записей на странице 'Пользователи'", tables, Table[] { new UsersView }, доступEntry),
+	};
+}

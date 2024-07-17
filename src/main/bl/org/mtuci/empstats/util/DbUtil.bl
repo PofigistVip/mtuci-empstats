@@ -1,0 +1,45 @@
+import org.mtuci.empstats.core.ProjTable;
+import org.zenframework.z8.base.sql.Transaction;
+import org.zenframework.z8.base.table.Table;
+import org.zenframework.z8.base.table.value.Field;
+import org.zenframework.z8.base.table.value.IntField;
+
+public class DbUtil {
+
+	public static void createOrUpdate(Table t, guid id) {
+		if (t.hasRecord(id))
+			t.update(id);
+		else
+			t.create(id);
+	}
+
+	public static void incIntField(ProjTable table, IntField field, guid id) {
+		incIntField(table, field, id, 1);
+	}
+
+	public static void incIntField(ProjTable table, IntField field, guid id, int step) {
+		if (step <= 0)
+			throw "'step' must be greater than 0";
+
+		table.getRecord(id, Field[] { field, });
+		field = field.get() + step;
+		table.update(id);
+		Transaction.flush();
+	}
+
+	public static void decIntField(ProjTable table, IntField field, guid id, int minimum) {
+		decIntField(table, field, id, minimum, 1);
+	}
+
+	public static void decIntField(ProjTable table, IntField field, guid id, int minimum, int step) {
+		if (step <= 0)
+			throw "'step' must be greater than 0";
+
+		table.getRecord(id, Field[] { field, });
+		field = field.get() > minimum
+		        ? field.get() - step
+		        : minimum;
+		table.update(id);
+		Transaction.flush();
+	}
+}

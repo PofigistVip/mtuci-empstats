@@ -1,0 +1,54 @@
+import org.mtuci.empstats.core.ProjTable;
+import org.mtuci.empstats.module.core.model.Пользователь;
+import org.zenframework.z8.base.sql.Transaction;
+import org.zenframework.z8.base.table.value.Aggregation;
+import org.zenframework.z8.base.table.value.Field;
+import org.zenframework.z8.base.table.value.Link;
+
+[generatable]
+[name "Global roles roles"]
+[displayName "Права доступа"]
+public class GlobalRoleRole extends ProjTable {
+
+	public GlobalRole gRole;
+	public ProjRole roles;
+
+	[name "Global role"]
+	public Link gRoleId = gRole;
+
+	[name "Role"]
+	public Link rolesId = roles;
+
+	virtual protected void afterCreate(guid recordId) {
+		super.afterCreate(recordId);
+		Transaction.flush();
+		UserGlobalRole ugr;
+		ugr.userId.aggregation = Aggregation.Array;
+		if (!ugr.aggregate(Field[] { ugr.userId }, ugr.roleId == gRoleId.get()))
+			return;
+		guid[] userIds = ugr.userId.array();
+		for (guid id : userIds) {
+			Пользователь.onGlobalRoleChanged(id);
+		}
+	}
+
+	virtual protected void beforeDestroy(guid recordId) {
+		super.beforeDestroy(recordId);
+		GlobalRoleRole me;
+		me.readRecord(recordId, Field[] { me.gRoleId });
+		gRoleId = me.gRoleId.get();
+	}
+
+	virtual protected void afterDestroy(guid recordId) {
+		super.afterDestroy(recordId);
+		Transaction.flush();
+		UserGlobalRole ugr;
+		ugr.userId.aggregation = Aggregation.Array;
+		if (!ugr.aggregate(Field[] { ugr.userId }, ugr.roleId == gRoleId.get()))
+			return;
+		guid[] userIds = ugr.userId.array();
+		for (guid id : userIds) {
+			Пользователь.onGlobalRoleChanged(id);
+		}
+	}
+}

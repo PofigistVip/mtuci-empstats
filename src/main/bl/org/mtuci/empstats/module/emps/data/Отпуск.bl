@@ -1,0 +1,44 @@
+import org.mtuci.empstats.module.emps.model.ГрафикОтпусков;
+import org.zenframework.z8.base.table.value.Field;
+import org.zenframework.z8.lang.Object;
+
+public class Отпуск extends Object {
+	public date дата;
+	public date срок;
+	public string вид;
+	public guid сотрудник;
+
+	static public Отпуск[][guid] отпускаСотрудника(date месяц) {
+		Отпуск[][guid] отпускаСотрудника;
+
+		date дата1 = месяц.truncMonth();
+		date дата2 = дата1.addMonth(1);
+
+		ГрафикОтпусков график;
+
+		Field[] fields = { график.дата, график.срок, график.вид.shortName, график.сотрудникId };
+
+		sql_bool where = график.дата < дата2 && дата2 < график.срок || график.дата <= дата1 && дата1 <= график.срок ||
+				дата1 <= график.дата && график.срок < дата2;
+
+		график.read(fields, where);
+
+		while(график.next()) {
+			Отпуск отпуск;
+			отпуск.дата = график.дата.get();
+			отпуск.срок = график.срок.get();
+			отпуск.вид = график.вид.shortName.get();
+			guid сотрудник = график.сотрудникId.get();
+			отпуск.сотрудник = сотрудник;
+
+			Отпуск[] отпуска = отпускаСотрудника[сотрудник];
+
+			if(отпуска == null)
+				отпускаСотрудника.add(сотрудник, Отпуск[]{ отпуск });
+			else
+				отпуска.add(отпуск);
+		}
+
+		return отпускаСотрудника;
+	}
+}

@@ -1,0 +1,14 @@
+import org.mtuci.empstats.module.emps.view.Подразделения;
+import org.mtuci.empstats.module.emps.view.Сотрудники;
+import org.mtuci.empstats.module.emps.view.Табели;
+import org.zenframework.z8.base.form.Desktop;
+
+[entry]
+[icon "fa-users"]
+[displayName "Кадры"]
+public class КадрыDesktop extends Desktop {
+
+	Подразделения Подразделения;
+	Сотрудники Сотрудники;
+	Табели Табели;
+}

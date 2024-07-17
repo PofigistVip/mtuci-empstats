@@ -1,0 +1,199 @@
+import org.mtuci.empstats.core.ProjTable;
+import org.mtuci.empstats.module.core.model.Статус;
+import org.mtuci.empstats.module.core.model.ШтатноеРасписание;
+import org.mtuci.empstats.module.emps.data.ГрафикРаботы;
+import org.mtuci.empstats.module.emps.data.Отпуск;
+import org.mtuci.empstats.module.emps.data.ПропускРаботы;
+import org.zenframework.z8.base.json.JsonObject;
+import org.zenframework.z8.base.table.value.Field;
+import org.zenframework.z8.base.table.value.IntField;
+import org.zenframework.z8.base.table.value.Link;
+import org.zenframework.z8.base.table.value.StringExpression;
+import org.zenframework.z8.base.table.value.StringField;
+
+[generatable]
+[name "Табель сотрудника"]
+[displayName "Табель сотрудника"]
+public class ТабельСотрудника extends ProjTable {
+	public Табель табель;
+	[name "Табель"] public Link табельId = табель;
+
+	public ШтатноеРасписание шр;
+	[name "Должность"] public Link шрId = шр;
+
+	[name "Дни"]
+	[displayName "Дни"]
+	public StringField дни;
+	дни.length = 2048;
+
+	[name "Всего план"]
+	[displayName "Всего план"]
+	public IntField рабочихДнейПлан;
+
+	[name "Всего факт"]
+	[displayName "Всего факт"]
+	public IntField рабочихДнейФакт;
+
+	virtual protected void onCreateAction(guid recordId) {
+		guid[] статусы = { Статус.Черновик, Статус.Отклонен };
+		табель.проверитьСтатус(табельId.get(), статусы);
+	}
+
+	virtual protected void onUpdateAction(guid recordId) {
+		Field[] fields = { табель.статусId };
+
+		if(!readRecord(recordId, fields))
+			throw "Запись '" + recordId + "' не существует.";
+
+		guid статус = табель.статусId.get();
+
+		if(статус != Статус.Черновик && статус != Статус.Отклонен)
+			throw "Неверный статус. Обновите данные.";
+
+		if(дни.isChanged())
+			рабочихДнейФакт = рабочихДней(дни.get());
+	}
+
+	private int рабочихДней(string дни) {
+		JsonObject табель = дни;
+		JsonObject факт = табель.getJsonObject("факт");
+
+		int рабочихДней = 0;
+
+		for(string name : факт.getNames()) {
+			try {
+				if(int.parse(факт.getString(name)) != 0)
+					рабочихДней += 1;
+			} catch(exception e) {
+			}
+		}
+
+		return рабочихДней;
+	}
+
+	private void clean(guid табель) {
+		destroy(табельId == табель);
+		//ТабельИстория история;
+		//история.destroy(история.табельId == табель);
+	}
+
+	private ПропускРаботы[][guid] пропускаСотрудника;
+	private bool initialized = false;
+
+	public void копияДляТабеля(guid табельОригинал, guid табельКопия) {
+		ТабельСотрудника оригинал;
+		Field[] fields = { оригинал.шрId, оригинал.дни, оригинал.рабочихДнейПлан, оригинал.рабочихДнейФакт };
+		оригинал.read(fields, оригинал.табельId == табельОригинал);
+		while (оригинал.next()) {
+			ТабельСотрудника копия;
+			копия.табельId = табельКопия;
+			копия.шрId = оригинал.шрId.get();
+			копия.дни = оригинал.дни.get();
+			копия.рабочихДнейПлан = оригинал.рабочихДнейПлан.get();
+			копия.рабочихДнейФакт = оригинал.рабочихДнейФакт.get();
+			копия.create();
+		}
+	}
+
+	private void initialize(date дата) {
+		if(!initialized) {
+			пропускаСотрудника = ПропускРаботы.пропускиСотрудника(дата);
+			initialized = true;
+		}
+	}
+
+	public void сформировать(guid табель, date дата, guid подразделение) {
+		clean(табель);
+		initialize(дата);
+
+		int[] график = new ГрафикРаботы.график(дата);
+
+		ШтатноеРасписание шр;
+
+		date дата1 = дата.truncMonth();
+		date дата2 = дата1.addMonth(1);
+
+		Field[] fields = { шр.сотрудникId, шр.сотрудник.фио, шр.должность.name, шр.дата, шр.срок };
+		sql_bool where = шр.подразделениеId == подразделение &&
+			(шр.дата < дата2 && дата2 < шр.срок || шр.дата <= дата1 && дата1 <= шр.срок || дата1 <= шр.дата && шр.срок < дата2);
+
+		шр.read(fields, where);
+
+		while(шр.next()) {
+			guid сотрудник = шр.сотрудникId.get();
+
+			ПропускРаботы[] пропуски = пропускаСотрудника[сотрудник] ?: {};
+			сформировать(табель, шр.дата.get(), шр.срок.get(), шр.recordId(), график, пропуски, дата1);
+		}
+	}
+
+	public guid сформировать(guid табель, date дата, date срок, guid шр, int[] график, ПропускРаботы[] пропуски, date месяц) {
+		JsonObject json;
+		json.put("date", месяц);
+
+		int рабочихДней = 0;
+
+		JsonObject jsonДни;
+		for(int i = 0; i < график.size(); i += 1) {
+			int часы = график[i];
+			if(часы != -1 && дата <= месяц && месяц <= срок) {
+				string пропуск = пропуск(пропуски, месяц);
+
+				if (!пропуск.isEmpty())
+					jsonДни.put(i + 1, пропуск);
+				else {
+					jsonДни.put(i + 1, часы == 0 ? "В" : часы);
+					рабочихДней += часы == 0 ? 0 : 1;
+				}
+			}
+			месяц = месяц.addDay(1);
+		}
+
+		json.put("план", jsonДни);
+		json.put("факт", jsonДни);
+
+		табельId = табель;
+		шрId = шр;
+		дни = json;
+		рабочихДнейФакт = рабочихДней;
+		рабочихДнейПлан = рабочихДней;
+		return create();
+	}
+
+	private string больничный(org.mtuci.empstats.module.emps.data.Больничный[] больничные, date дата) {
+		for(org.mtuci.empstats.module.emps.data.Больничный больничный : больничные) {
+			if(больничный.дата <= дата && дата <= больничный.срок)
+				return "Б";
+		}
+		return "";
+	}
+
+	private string отпуск(Отпуск[] отпуска, date дата) {
+		for(Отпуск отпуск : отпуска) {
+			if(отпуск.дата <= дата && дата <= отпуск.срок)
+				return отпуск.вид;
+		}
+		return "";
+	}
+
+	private string пропуск(ПропускРаботы[] пропуски, date дата) {
+		ПропускРаботы[] подходящие;
+		for(ПропускРаботы пропуск : пропуски) {
+			if(пропуск.дата <= дата && дата <= пропуск.срок)
+				подходящие.add(пропуск);
+		}
+		if (подходящие.size() == 0)
+			return "";
+		return "П";
+	}
+
+	virtual protected void constructor() {
+		for(int i = 1; i <= 31; i += 1) {
+			StringExpression день;
+			день.setId(i);
+			день.setDisplayName(i);
+			objects.add(день);
+			controls.add(день);
+		}
+	}
+}

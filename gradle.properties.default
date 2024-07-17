@@ -1,0 +1,8 @@
+# If z8.home is set, build script assumes Z8 project is in Eclipse workspace
+# otherwise build script will use Maven to resolve Z8 dependencies
+#z8Home=/path/to/z8
+
+application.database.schema=public
+application.database.user=z8
+application.database.password=z8
+application.database.connection=jdbc:postgresql://localhost/z8

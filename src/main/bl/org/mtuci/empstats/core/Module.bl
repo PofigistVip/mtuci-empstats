@@ -1,0 +1,81 @@
+import org.mtuci.empstats.module.permission.data.GlobalRoleData;
+import org.mtuci.empstats.module.permission.data.RoleData;
+import org.zenframework.z8.base.table.Table;
+import org.zenframework.z8.lang.Object;
+
+public class Module extends Object {
+
+	virtual public string moduleName() {
+		throw "moduleName isn't set";
+	}
+
+	protected RoleData[] roles;
+	protected GlobalRoleData[] globalRoles;
+
+	virtual protected RoleData[] dynamicRoles() {
+		RoleData[] roles;
+		return roles;
+	}
+
+	virtual protected GlobalRoleData[] dynamicGlobalRoles() {
+		GlobalRoleData[] gRoles;
+		return gRoles;
+	}
+
+	public RoleData[] getRoles() {
+		RoleData[] allRoles;
+		allRoles.addAll(this.roles);
+		allRoles.addAll(dynamicRoles());
+		return allRoles;
+	}
+
+	public GlobalRoleData[] getGlobalRoles() {
+		GlobalRoleData[] allRoles;
+		allRoles.addAll(globalRoles);
+		allRoles.addAll(dynamicGlobalRoles());
+		return allRoles;
+	}
+
+	protected string[Table] rTables(Table[] tables) {
+		return sameAccessTables(tables, "r");
+	}
+
+	protected string[Table] rwTables(Table[] tables) {
+		return sameAccessTables(tables, "rw");
+	}
+
+	protected string[Table] rwndTables(Table[] tables) {
+		return sameAccessTables(tables, "rwnd");
+	}
+
+	protected string[Table] rw_rTables(Table[] rw, Table[] r) {
+		string[Table] dt = sameAccessTables(rw, "rw");
+		dt.add(sameAccessTables(r, "r"));
+		return dt;
+	}
+
+	protected string[Table] rwn_rTables(Table[] rwnd, Table[] r) {
+		string[Table] dt = sameAccessTables(rwnd, "rwn");
+		dt.add(sameAccessTables(r, "r"));
+		return dt;
+	}
+
+	protected string[Table] rwnd_rTables(Table[] rwnd, Table[] r) {
+		string[Table] dt = sameAccessTables(rwnd, "rwnd");
+		dt.add(sameAccessTables(r, "r"));
+		return dt;
+	}
+
+	protected string[Table] rwncd_rTables(Table[] rwnd, Table[] r) {
+		string[Table] dt = sameAccessTables(rwnd, "rwncd");
+		dt.add(sameAccessTables(r, "r"));
+		return dt;
+	}
+
+	protected string[Table] sameAccessTables(Table[] tables, string access) {
+		string[Table] dt;
+		for (Table t : tables)
+			dt.add(t, access);
+		return dt;
+	}
+}

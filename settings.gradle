@@ -1,0 +1,5 @@
+rootProject.name = 'mtuci-empstats'
+
+if (properties.containsKey('z8Home'))
+	includeBuild(z8Home)
+

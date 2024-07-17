@@ -1,0 +1,14 @@
+import org.mtuci.empstats.core.ModuleManager;
+public class SchemaGenerator extends org.zenframework.z8.base.table.SchemaGenerator {
+
+	virtual public void beforeStart() {
+		super.beforeStart();
+	}
+
+	virtual public void afterFinish() {
+		super.afterFinish();
+
+		ModuleManager manager;
+		manager.afterSchemaGenerate();
+	}
+}

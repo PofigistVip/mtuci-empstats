@@ -1,0 +1,25 @@
+import org.mtuci.empstats.module.core.model.История;
+public class ИсторияLogger {
+
+	public static ИсторияLogger getInstance(guid сущностьИсторииId) {
+		if (сущностьИсторииId == guid.Null)
+			throw "сущностьИсторииId isn't set";
+		ИсторияLogger me;
+		me.сущностьИсторииId = сущностьИсторииId;
+		return me;
+	}
+
+	private guid сущностьИсторииId;
+
+	public guid создать(guid id, string действие) {
+		return new История.создать(сущностьИсторииId, id, действие);
+	}
+
+	public guid создать(guid id, string действие, string сообщение) {
+		return new История.создать(сущностьИсторииId, id, действие, сообщение);
+	}
+
+	public void удалить(guid id) {
+		new История.удалить(сущностьИсторииId, id);
+	}
+}

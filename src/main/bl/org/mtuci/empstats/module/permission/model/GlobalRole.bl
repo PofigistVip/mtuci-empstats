@@ -1,0 +1,42 @@
+import org.mtuci.empstats.core.ProjTable;
+import org.zenframework.z8.base.table.RecordLock;
+import org.zenframework.z8.base.table.value.BoolExpression;
+import org.zenframework.z8.base.table.value.Join;
+import org.zenframework.z8.base.table.value.JoinType;
+import org.zenframework.z8.base.table.value.StringField;
+
+[generatable]
+[name "Global roles"]
+public class GlobalRole extends ProjTable {
+
+	public UserGlobalRole userGRole;
+	public GlobalRoleRole gRoleRole;
+
+	[displayName "Роль"]
+	[name "Name"]
+	public StringField name;
+	name.length = 128;
+
+	[displayName "Описание"]
+	[name "Description"]
+	public StringField description;
+	description.length = 512;
+
+	[icon "fa-cog"]
+	[displayName "Создано системой"]
+	public BoolExpression isSystem = lock == RecordLock.Full;
+
+	public Join userGRoleJoin = recordId.sql_guid() == userGRole.roleId;
+	userGRoleJoin.query = userGRole;
+	userGRoleJoin.joinType = JoinType.Inner;
+
+	public Join gRoleRoleJoin = recordId.sql_guid() == gRoleRole.gRoleId;
+	gRoleRoleJoin.query = gRoleRole;
+	gRoleRoleJoin.joinType = JoinType.Inner;
+
+	virtual protected void beforeDestroy(guid recordId) {
+		super.beforeDestroy(recordId);
+		userGRole.destroy(userGRole.roleId == recordId);
+		gRoleRole.destroy(gRoleRole.gRoleId == recordId);
+	}
+}

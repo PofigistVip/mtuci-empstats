@@ -1,0 +1,41 @@
+import org.zenframework.z8.base.json.JsonObject;
+
+public class ЭЦП {
+	public string signature;
+	public string owner;
+	public string serialNumber;
+	public date validFrom;
+	public date validTill;
+	public string algorithm;
+	public string provider;
+	public string data;
+
+	static public ЭЦП fromJson(string jsonString) {
+		ЭЦП эцп;
+
+		JsonObject json = jsonString;
+
+		эцп.signature = json.getString("signature");
+		эцп.owner = json.getString("owner");
+		эцп.serialNumber = json.getString("serialNumber");
+		эцп.validFrom = date.parse(json.getString("validFrom"));
+		эцп.validTill = date.parse(json.getString("validTill"));
+		эцп.algorithm = json.getString("algorithm");
+		эцп.provider = json.getString("provider");
+		эцп.data = json.getString("data");
+		return эцп;
+	}
+
+	public string toJson() {
+		JsonObject json;
+		json.put("signature", signature);
+		json.put("owner", owner);
+		json.put("serialNumber", serialNumber);
+		json.put("validFrom", validFrom.toString());
+		json.put("validTill", validTill.toString());
+		json.put("algorithm", algorithm);
+		json.put("provider", provider);
+		json.put("data", data);
+		return json.toString();
+	}
+}

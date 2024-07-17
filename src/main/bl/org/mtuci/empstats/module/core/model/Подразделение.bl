@@ -1,0 +1,52 @@
+import org.mtuci.empstats.core.NameField;
+import org.mtuci.empstats.core.ProjTable;
+import org.mtuci.empstats.core.ShortNameField;
+import org.zenframework.z8.base.table.value.DateField;
+import org.zenframework.z8.base.table.value.Field;
+import org.zenframework.z8.base.table.value.Link;
+import org.zenframework.z8.base.table.value.StringField;
+
+[generatable]
+[name "Подразделения"]
+[displayName "Подразделения"]
+public class Подразделение extends ProjTable {
+	[displayName "Код подразделения"] ShortNameField shortName;
+	shortName.length = 64;
+
+	[displayName "Подразделение"] NameField name;
+	name.length = 240;
+
+	ТипПодразделения тип;
+	[name "Тип"] public Link типId = тип;
+
+	[name "Адрес"]
+	[displayName "Адрес"]
+	public StringField адрес;
+	адрес.length = 512;
+
+	[name "Email"]
+	[displayName "Email"]
+	public StringField email;
+
+	[name "Сайт"]
+	[displayName "Сайт"]
+	public StringField web;
+
+	[name "Дата образования"]
+	[displayName "Дата образования"]
+	public DateField датаОбразования;
+
+	public guid[] действующиеСотрудники(guid id) {
+		return действующиеСотрудники(guid[] { id });
+	}
+
+	public guid[] действующиеСотрудники(guid[] ids) {
+		ШтатноеРасписание шр;
+		guid[] arr;
+		шр.read(Field[] { шр.сотрудникId }, шр.подразделениеId.inVector(ids) && шр.срок == date.Max);
+		while (шр.next()) {
+			arr.add(шр.сотрудникId.get());
+		}
+		return arr;
+	}
+}

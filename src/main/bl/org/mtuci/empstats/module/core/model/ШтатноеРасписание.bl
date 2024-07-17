@@ -1,0 +1,39 @@
+import org.mtuci.empstats.core.ProjTable;
+import org.zenframework.z8.base.table.value.CountExpression;
+import org.zenframework.z8.base.table.value.DateField;
+import org.zenframework.z8.base.table.value.Link;
+
+[generatable]
+[name "Штатное расписание"]
+[displayName "Штатное расписание"]
+public class ШтатноеРасписание extends ProjTable {
+
+	public Подразделение подразделение;
+	public Сотрудник сотрудник;
+	public Должность должность;
+
+
+	[name "Подразделение"] public Link подразделениеId = подразделение;
+	[name "Сотрудник"] public Link сотрудникId = сотрудник;
+	[name "Должность"] public Link должностьId = должность;
+
+
+	[name "Дата"]
+	[displayName "Дата назначения"]
+	public DateField дата;
+	дата.indexed = true;
+
+	[name "Срок"]
+	[displayName "Срок"]
+	public DateField срок;
+	срок.defaultValue = date.Max;
+	срок.indexed = true;
+
+	CountExpression countExpr;
+
+	virtual protected void beforeUpdate(guid recordId) {
+		super.beforeUpdate(recordId);
+		if(срок.isChanged() && срок.get() == date.Min)
+			срок = date.Max;
+	}
+}

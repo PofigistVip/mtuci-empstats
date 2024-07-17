@@ -1,0 +1,38 @@
+import org.mtuci.empstats.core.ProjTable;
+import org.mtuci.empstats.module.core.model.Сотрудник;
+import org.mtuci.empstats.module.core.model.ШтатноеРасписание;
+import org.zenframework.z8.base.table.value.DateField;
+import org.zenframework.z8.base.table.value.Join;
+import org.zenframework.z8.base.table.value.Link;
+import org.zenframework.z8.base.table.value.StringField;
+
+[generatable]
+[name "Больничный"]
+[displayName "Больничные"]
+public class Больничный extends ProjTable {
+	public Сотрудник сотрудник;
+	[name "Сотрудник"] public Link сотрудникId = сотрудник;
+
+	[name "Дата"]
+	[displayName "Дата"]
+	public DateField дата;
+	дата.indexed = true;
+
+	[name "Срок"]
+	[displayName "Срок"]
+	public DateField срок;
+	срок.indexed = true;
+
+	[name "Документ"]
+	[displayName "Документ"]
+	public StringField документ;
+	документ.length = 128;
+
+	[name "Дата документа"]
+	[displayName "Дата документа"]
+	public DateField датаДокумента;
+
+	public ШтатноеРасписание шр;
+	private Join шрJoin = сотрудникId == (sql_guid)шр.сотрудникId && шр.срок == date.Max;
+	шрJoin.query = шр;
+}

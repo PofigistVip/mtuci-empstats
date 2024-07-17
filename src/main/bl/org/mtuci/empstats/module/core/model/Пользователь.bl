@@ -1,0 +1,224 @@
+import org.mtuci.empstats.module.emps.КадрыModule;
+import org.mtuci.empstats.module.permission.model.GlobalRoleRole;
+import org.mtuci.empstats.module.permission.model.RoleEntry;
+import org.mtuci.empstats.module.permission.model.UserGlobalRole;
+import org.zenframework.z8.base.json.JsonArray;
+import org.zenframework.z8.base.sql.Transaction;
+import org.zenframework.z8.base.table.RecordLock;
+import org.zenframework.z8.base.table.system.UserEntries;
+import org.zenframework.z8.base.table.system.UserRoles;
+import org.zenframework.z8.base.table.system.Users;
+import org.zenframework.z8.base.table.value.Aggregation;
+import org.zenframework.z8.base.table.value.Field;
+import org.zenframework.z8.base.table.value.StringExpression;
+
+[generatable]
+[displayName "Пользователи"]
+public class Пользователь extends Users {
+	public static string ШтатноеРасписаниеId = "штатноеРасписание.id";
+
+	public static string ДолжностьId = "должность.id";
+	public static string ДолжностьName = "должность.name";
+
+	public static string ПодразделениеId = "подразделение.id";
+	public static string ПодразделениеShortName = "подразделение.shortName";
+	public static string ПодразделениеName = "подразделение.name";
+	public static string ПодразделениеТип = "подразделение.тип";
+
+	public static string СотрудникId = "сотрудник.id";
+	public static string СотрудникФио = "сотрудник.фио";
+	public static string СотрудникФамилия = "сотрудник.фамилия";
+	public static string СотрудникИмя = "сотрудник.имя";
+	public static string СотрудникОтчество = "сотрудник.отчество";
+
+
+	[displayName "Логин"]
+	public StringExpression loginAndBanned = name.sql_string() + banned.IIF(" (Заблокирован)", "");
+
+
+	public sql_bool isSystem() {
+		return recordId == Users.Administrator || recordId == Users.System;
+	}
+
+	virtual protected bool getParameters(guid userId, string login, primary[string] parameters) {
+		parameters.add(PERMS, calcPerms(userId));
+
+		сотрудник(userId, parameters);
+
+		return true;
+	}
+
+	private string calcPerms(guid id) {
+		guid[] perms;
+		UserGlobalRole permQ;
+		permQ.read(Field[] { permQ.role.gRoleRole.rolesId }, permQ.userId == id);
+		while (permQ.next())
+			perms.add(permQ.role.gRoleRole.rolesId.get());
+		perms = perms.unique();
+		JsonArray permsJson = perms;
+		return permsJson.toString();
+	}
+
+	static public guid штатноеРасписаниеId() {
+		return user().getParameter(ШтатноеРасписаниеId, guid.Null);
+	}
+
+	static public guid подразделениеId() {
+		return user().getParameter(ПодразделениеId, guid.Null);
+	}
+
+	static public string подразделениеКод() {
+		return user().getParameter(ПодразделениеShortName, "");
+	}
+
+	static public guid сотрудникId() {
+		return user().getParameter(СотрудникId, guid.Null);
+	}
+
+	static public guid должностьId() {
+		return user().getParameter(ДолжностьId, guid.Null);
+	}
+
+	static public string должность() {
+		return user().getParameter(ДолжностьName, "");
+	}
+
+	static public bool кадровик() {
+		return hasPerm(КадрыModule.PERM_ТАБЕЛИ_КАДРЫ);
+	}
+
+	static public bool бухгалтер() {
+		return hasPerm(КадрыModule.PERM_ТАБЕЛИ_БУХГАЛТЕРИЯ);
+	}
+
+	static public bool подачаТабеля() {
+		return hasPerm(КадрыModule.PERM_ТАБЕЛИ_ПОДАЧА);
+	}
+
+	static public bool hasUserRole(guid user, guid role) {
+		return hasUserRole(user, guid[] { role });
+	}
+
+	static public bool hasUserRole(guid user, guid[] roles) {
+		UserRoles ur;
+		return ur.hasRecord(ur.user == user && ur.role.inVector(roles));
+	}
+
+	private void сотрудник(guid userId, primary[string] parameters) {
+		ШтатноеРасписание шр;
+
+		Field[] fields = { шр.должность.name, шр.подразделение.shortName, шр.подразделение.name, шр.подразделение.типId,
+			шр.сотрудник.фио, шр.сотрудник.фамилия, шр.сотрудник.имя, шр.сотрудник.отчество };
+
+		if(шр.readFirst(fields, шр.срок == date.Max && шр.сотрудник.пользовательId == userId)) {
+			guid тип = шр.подразделение.типId.get();
+
+			parameters.add(ШтатноеРасписаниеId, шр.recordId());
+
+			parameters.add(ДолжностьId, шр.должностьId.get());
+			parameters.add(ДолжностьName, шр.должность.name.get());
+
+			parameters.add(ПодразделениеId, шр.подразделениеId.get());
+			parameters.add(ПодразделениеShortName, шр.подразделение.shortName.get());
+			parameters.add(ПодразделениеName, шр.подразделение.name.get());
+			parameters.add(ПодразделениеТип, тип);
+
+			parameters.add(СотрудникId, шр.сотрудникId.get());
+			parameters.add(СотрудникФио, шр.сотрудник.фио.get());
+			parameters.add(СотрудникФамилия, шр.сотрудник.фамилия.get());
+			parameters.add(СотрудникИмя, шр.сотрудник.имя.get());
+			parameters.add(СотрудникОтчество, шр.сотрудник.отчество.get());
+		}
+	}
+
+
+	public static string PERMS = "perms";
+
+
+	public static guid[] perms() {
+		JsonArray permsJson = user().getParameter(PERMS, "[]");
+		return permsJson.toGuidArray();
+	}
+
+	public static bool hasPerm(guid roleId) {
+		return perms().contains(roleId);
+	}
+
+	public static bool anyPerm(guid[] roleIds) {
+		guid[] roles = perms();
+		for (guid roleId : roleIds) {
+			if (roles.contains(roleId))
+				return true;
+		}
+		return false;
+	}
+
+	public static void resetAllRoles() {
+		Пользователь u;
+		guid[] uIds = u.findRecords(true);
+		for (guid id : uIds) {
+			onGlobalRoleChanged(id);
+			Transaction.flush();
+		}
+	}
+
+	public static void onGlobalRoleChanged(guid userId) {
+		resetSystemRoles(userId);
+		resetEntries(userId);
+	}
+
+	private static void resetSystemRoles(guid userId) {
+		GlobalRoleRole role;
+		role.rolesId.aggregation = Aggregation.Array;
+		role.aggregate(Field[] { role.rolesId }, role.gRole.userGRole.userId == userId);
+		guid[] roles = role.rolesId.array().unique();
+
+		guid[] overhead;
+		UserRoles ur;
+		ur.read(Field[] { ur.recordId, ur.role }, ur.user == userId);
+		while (ur.next()) {
+			if (roles.contains(ur.role.get()))
+				roles.remove(ur.role.get());
+			else
+				overhead.add(ur.role.get());
+		}
+
+		for (guid roleId : roles) {
+			ur.role = roleId;
+			ur.user = userId;
+			ur.create();
+		}
+
+		ur.destroy(ur.user == userId && ur.role.inVector(overhead) && ur.roles.lock != RecordLock.Destroy);
+	}
+
+	private static void resetEntries(guid userId) {
+		UserEntries ue;
+		guid[guid] existing;
+		ue.read(Field[] { ue.recordId, ue.entry }, ue.user == userId);
+		while (ue.next()) {
+			existing.add(ue.entry.get(), ue.recordId());
+		}
+		guid[] all;
+		guid[] updated;
+		RoleEntry re;
+		re.read(Field[] { re.entryId, re.position }, re.role.globalRoleRole.gRole.userGRole.userId == userId);
+		while (re.next()) {
+			if (updated.contains(re.entryId.get()))
+				continue;
+			updated.add(re.entryId.get());
+
+			ue.position = re.position.get();
+			ue.entry = re.entryId.get();
+			ue.user = userId;
+			if (existing.containsKey(re.entryId.get())) {
+				all.add(existing[re.entryId.get()]);
+				ue.update(existing[re.entryId.get()]);
+			}
+			else
+				all.add(ue.create());
+		}
+
+		ue.destroy(ue.user == userId && ue.lock == RecordLock.None && !ue.recordId.inVector(all));
+	}
+}

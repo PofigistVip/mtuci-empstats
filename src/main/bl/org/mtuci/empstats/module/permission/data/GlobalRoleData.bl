@@ -1,0 +1,16 @@
+public class GlobalRoleData {
+	public guid id;
+	public string name;
+	public string desc;
+	public string moduleName;
+	public guid[] roles;
+
+	public static GlobalRoleData init(guid id, string name, string desc, guid[] roles) {
+		GlobalRoleData me;
+		me.id = id;
+		me.name = name;
+		me.desc = desc;
+		me.roles = roles;
+		return me;
+	}
+}

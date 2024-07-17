@@ -1,0 +1,19 @@
+import org.mtuci.empstats.module.permission.model.GlobalRole;
+import org.mtuci.empstats.module.permission.model.GlobalRoleRole;
+
+public class GlobalRolesVModel extends GlobalRole {
+
+	gRoleRole = class {
+		roles = class {
+			virtual protected void beforeRead() {
+				super.beforeRead();
+				guid gId = container.container.recordId();
+				if (gId == guid.Null)
+					return;
+				GlobalRoleRole me;
+				guid[] ids = me.aggrIds(me.rolesId, me.gRoleId == gId);
+				addWhere(!recordId.inVector(ids));
+			}
+		};
+	};
+}

@@ -1,0 +1,6 @@
+import org.zenframework.z8.base.table.value.BoolField;
+
+[name "Archive"]
+public class ArchiveField extends BoolField {
+
+}

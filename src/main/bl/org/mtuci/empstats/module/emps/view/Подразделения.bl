@@ -1,0 +1,156 @@
+import org.mtuci.empstats.module.core.model.Подразделение;
+import org.mtuci.empstats.module.core.model.ШтатноеРасписание;
+import org.mtuci.empstats.module.emps.model.Больничный;
+import org.mtuci.empstats.module.emps.model.ТабельСотрудника;
+import org.zenframework.z8.base.form.Listbox;
+import org.zenframework.z8.base.form.Section;
+import org.zenframework.z8.base.form.Tab;
+import org.zenframework.z8.base.form.TabControl;
+import org.zenframework.z8.base.table.SortDirection;
+
+[request true]
+[displayName "Подразделения"]
+public class Подразделения extends Подразделение {
+
+	ШтатноеРасписание шр = class {
+		virtual protected sql_bool where() {
+			return срок == date.Max;
+		}
+	};
+
+	ШтатноеРасписание шрАрхив = class {
+		virtual protected sql_bool where() {
+			return срок != date.Max;
+		}
+	};
+
+	ТабельСотрудника табельСотрудника = class {
+		virtual protected sql_bool where() {
+			return табель.период == date.today().truncMonth();
+		}
+	};
+
+	Больничный больничный;
+	больничный.period = больничный.дата;
+
+	[displayName "Должности"]
+	private Listbox должности;
+	должности.query = шр;
+	должности.link = шр.подразделениеId;
+	должности.flex = 1;
+	должности.colSpan = 4;
+
+	шр.дата.editable = true;
+	шр.срок.editable = true;
+	должности.editable = true;
+	должности.readOnly = true;
+
+	шр.сотрудник.полноеИмя.source = new Сотрудники;
+
+	должности.columns = {
+		шр.сотрудник.полноеИмя,
+		шр.должность.name,
+		шр.сотрудник.пользователь.name,
+		шр.дата,
+		шр.срок,
+	};
+
+	шр.дата.sortDirection = SortDirection.Desc;
+	должности.sortFields = { шр.сотрудник.фио };
+
+	шрАрхив.сотрудник.полноеИмя.source = new Сотрудники;
+
+	[displayName "Архив"]
+	private Listbox архив;
+	архив.query = шрАрхив;
+	архив.link = шрАрхив.подразделениеId;
+	архив.flex = 1;
+	архив.readOnly = true;
+	архив.columns = {
+		шрАрхив.сотрудник.полноеИмя,
+		шрАрхив.должность.name,
+		шрАрхив.дата,
+		шрАрхив.срок,
+	};
+
+	шрАрхив.дата.sortDirection = SortDirection.Desc;
+	архив.sortFields = { шрАрхив.сотрудник.фио, шрАрхив.дата };
+
+	[displayName "Табель"]
+	[ui "Кадры_Табели_ТабельControl"]
+	private Listbox табель;
+	табель.query = табельСотрудника;
+	табель.link = табельСотрудника.шр.подразделениеId;
+	табель.flex = 1;
+	табель.colSpan = 4;
+	табель.readOnly = true;
+	табель.columns = {
+		табельСотрудника.шр.сотрудник.фио,
+		табельСотрудника.шр.должность.name,
+		табельСотрудника.дни
+	};
+	табель.sortFields = { табельСотрудника.шр.сотрудник.фио };
+
+
+
+	[displayName "Больничные"]
+	private Listbox больничные;
+	больничные.query = больничный;
+	больничные.link = больничный.шр.подразделениеId;
+	больничные.flex = 1;
+	больничные.colSpan = 4;
+	больничные.readOnly = true;
+	больничные.columns = {
+		больничный.сотрудник.фио,
+		больничный.шр.должность.name,
+		больничный.дата,
+		больничный.срок,
+		больничный.документ
+	};
+	больничный.sortFields = { больничный.сотрудник.фио, больничный.дата };
+
+
+	[displayName "Штатное расписание"]
+	Tab должностиTab;
+	должностиTab.controls = { должности };
+
+	[displayName "Архив должностей"]
+	Tab архивTab;
+	архивTab.controls = { архив };
+
+	[displayName "Табель"]
+	Tab табельTab;
+	табельTab.controls = { табель };
+
+	[displayName "Больничные"]
+	Tab больничныеTab;
+	больничныеTab.controls = { больничные };
+
+
+	TabControl tabs;
+	tabs.flex = 1;
+	tabs.colSpan = 1;
+	tabs.tabs = { должностиTab, табельTab, больничныеTab, архивTab, };
+
+	Section section1;
+	section1.colCount = 6;
+	name.colSpan = 2;
+	[displayName "Год образования"] датаОбразования;
+	датаОбразования.format = "Y";
+	section1.controls = { name, shortName, тип.name, датаОбразования };
+
+	Section section2;
+	section2.colCount = 4;
+	section2.controls = { email, web };
+
+	[displayName "Номер подразделения"] shortName;
+	[displayName "Подразделение"] name;
+
+	colCount = 1;
+	controls = { section1, section2, tabs };
+	names = { shortName,  };
+	quickFilters = { shortName,  };
+	sortFields = { shortName };
+
+	columns = { name, shortName, email, web, };
+}

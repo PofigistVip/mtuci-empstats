@@ -1,0 +1,31 @@
+import org.mtuci.empstats.module.core.model.Пользователь;
+import org.mtuci.empstats.module.permission.model.UserGlobalRole;
+import org.zenframework.z8.base.form.action.Action;
+import org.zenframework.z8.base.query.Query;
+import org.zenframework.z8.base.table.value.Aggregation;
+import org.zenframework.z8.base.table.value.Field;
+
+public class UsersVModel extends Пользователь {
+
+	[displayName "Роли"]
+	UserGlobalRole role = class {
+		role = class {
+			virtual protected void beforeRead() {
+				super.beforeRead();
+				UserGlobalRole me;
+				me.roleId.aggregation = Aggregation.Array;
+				guid[] roleIds;
+				if (me.aggregate(Field[] { me.roleId }, me.userId == container.container.recordId()))
+					roleIds = me.roleId.array();
+				addWhere(!recordId.inVector(roleIds));
+			}
+		};
+	};
+
+	[displayName "Восстановить доступы"]
+	Action восстановитьДоступы = class {
+		virtual protected void execute(guid[] recordIds, Query context, guid[] selected, Query query) {
+			Пользователь.resetAllRoles();
+		}
+	};
+}
